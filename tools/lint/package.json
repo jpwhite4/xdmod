@@ -1,0 +1,12 @@
+{
+    "name": "lint-diff",
+    "repository": "",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Helper script to diff ilnt output files",
+    "author": "XDMoD CCR Help <ccr-xdmod-help@buffalo.edu",
+    "dependencies": {
+        "diff": "3.2.x"
+    },
+    "engine": "node >= 0.10.25"
+}
