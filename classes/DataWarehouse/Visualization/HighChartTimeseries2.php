@@ -140,8 +140,6 @@ class HighChartTimeseries2 extends HighChart2
     {
         $this->show_filters = $show_filters;
 
-        $this->registerContextMenus();
-
         // Instantiate the color generator:
         $colorGenerator = new \DataWarehouse\Visualization\ColorGenerator();
 
@@ -676,9 +674,6 @@ class HighChartTimeseries2 extends HighChart2
                         {
                             $visible = $data_description->visibility->{$formattedDataSeriesName};
                         }
-                        $seriesClick = 'function(event){'.($this->_showContextMenu?'XDMoD.Module.MetricExplorer.seriesContextMenu(this,false,'.$data_description->id.');':'').'}';
-                        $legendItemClick = $this->_showContextMenu?'function(event){XDMoD.Module.MetricExplorer.seriesContextMenu(this,true,'.$data_description->id.'); return false;}':'function(event){return true;}';
-                        $pointClick = 'function(event){'.($this->_showContextMenu?'this.ts = this.x; XDMoD.Module.MetricExplorer.pointContextMenu(this,'.$data_description->id.');':'').'}';
 
                         // note that this is governed by XId and XValue in the non-timeseries case!
                         $drilldown = array('id' => $yAxisDataObject->getGroupId(), 'label' => $yAxisDataObject->getGroupName());
@@ -713,14 +708,6 @@ class HighChartTimeseries2 extends HighChart2
                             'data' => $seriesValues,
                             'cursor' => 'pointer',
                             'visible' => $visible,
-                            'events' => array(
-                                'legendItemClick' => $legendItemClick
-                            ),
-                            'point' => array(
-                                'events' => array(
-                                    'click' => $pointClick
-                                )
-                            ),
                             'pointRange' => $pointInterval,
                             'isRemainder' => $isRemainder,
                             'isRestrictedByRoles' => $data_description->restrictedByRoles
@@ -913,8 +900,6 @@ class HighChartTimeseries2 extends HighChart2
         if ($this->_showWarnings) {
             $this->addRestrictedDataWarning();
         }
-
-        $this->addChartExtensions();
 
         if($this->show_filters)
         {

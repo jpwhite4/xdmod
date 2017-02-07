@@ -122,29 +122,7 @@ class HighChart2
 				'symbolWidth' => 40,
 				'backgroundColor' => '#FFFFFF',
 				'borderWidth' => 0,
-				'y' => -5,
-				'labelFormatter' => "function()
-				{
-					var ret = '';
-					var x = this.name;
-					var indexOfSQ = x.indexOf(']');
-					var brAlready = false;
-					if( indexOfSQ > 0)
-					{
-						ret += x.substring(0,indexOfSQ+1)+'<br/>';
-						 x = x.substring(indexOfSQ+1,x.length);
-						brAlready = true;
-					}
-					var indexOfBr = x.indexOf('{');
-					if( indexOfBr > 0 && !brAlready)
-					{
-						 ret += x.substring(0,indexOfBr)+'<br/>';
-						 x = x.substring(indexOfBr,x.length);
-					}
-					ret+=x.wordWrap(50,'<br/>');
-					return ret;
-				}
-				"
+				'y' => -5
 			),
 			'series' => array(),
 			'tooltip' => array(
@@ -513,31 +491,6 @@ class HighChart2
 	} // setLegend()
 
 	// ---------------------------------------------------------
-	// registerContextMenus()
-	//
-	// Set chart's context menus in javascript, as chart
-	// parameters. Not ideal.
-	//
-	// ---------------------------------------------------------
-	protected function registerContextMenus()
-	{
-		if($this->_showContextMenu)
-		{
-			$this->_chart['chart']['events'] = array(
-				'titleClick' => 'function(event){return XDMoD.Module.MetricExplorer.titleContextMenu(event);}',
-				'subtitleClick' => 'function(event){return XDMoD.Module.MetricExplorer.subtitleContextMenu(event);}',
-				'xAxisClick' => 'function(axis){return XDMoD.Module.MetricExplorer.xAxisContextMenu(axis);}',
-				'yAxisClick' => 'function(axis){return XDMoD.Module.MetricExplorer.yAxisContextMenu(axis);}',
-				'xAxisTitleClick' => 'function(axis){return XDMoD.Module.MetricExplorer.xAxisTitleContextMenu(axis);}',
-				'yAxisTitleClick' => 'function(axis){return XDMoD.Module.MetricExplorer.yAxisTitleContextMenu(axis);}',
-				'xAxisLabelClick' => 'function(axis){return XDMoD.Module.MetricExplorer.xAxisLabelContextMenu(axis);}',
-				'yAxisLabelClick' => 'function(axis){return XDMoD.Module.MetricExplorer.yAxisLabelContextMenu(axis);}',
-				'click' => 'function(event){return XDMoD.Module.MetricExplorer.chartContextMenu.call(this,event);}'
-			);
-		}
-	} // registerContextMenus()
-
-	// ---------------------------------------------------------
 	// setMultiRealm()
 	//
 	// Determine whether plot contains multiple realms; set
@@ -763,7 +716,6 @@ class HighChart2
 		$this->limit = $limit;
 		$this->show_filters = $show_filters;
 		$this->setMultiRealm( $data_series );
-		$this->registerContextMenus();
 
 		// Instantiate the color generator:
 		$colorGenerator = new \DataWarehouse\Visualization\ColorGenerator();
@@ -1126,12 +1078,6 @@ class HighChart2
 				{
 					$visible = $data_description->visibility->{$formattedDataSeriesName};
 				}
-				$seriesClick = 'function(event){'.($this->_showContextMenu?'XDMoD.Module.MetricExplorer.seriesContextMenu(this,false,'.
-                            $data_description->id.');':'').'}';
-				$legendItemClick = $this->_showContextMenu?'function(event){XDMoD.Module.MetricExplorer.seriesContextMenu(this,true,'.
-                            $data_description->id.'); return false;}':'function(event){return true;}';
-				$pointClick = 'function(event){'.($this->_showContextMenu?'XDMoD.Module.MetricExplorer.pointContextMenu(this,'.
-                            $data_description->id.');':'').'}';
 
 				$data_series_desc = array(
 					'name' => $lookupDataSeriesName,
@@ -1165,14 +1111,6 @@ class HighChart2
 					'data' => $values,
 					'cursor' => 'pointer',
 					'visible' => $visible,
-					'events' => array(
-						'legendItemClick' => $legendItemClick
-					),
-					'point' => array(
-						'events' => array(
-							'click' => $pointClick
-						)
-					),
 					'isRestrictedByRoles' => $data_description->restrictedByRoles,
 				); // $data_series_desc
 
@@ -1210,8 +1148,6 @@ class HighChart2
 		if ($this->_showWarnings) {
 			$this->addRestrictedDataWarning();
 		}
-
-		$this->addChartExtensions();
 
 		// set title and subtitle for chart
 		$this->setChartTitleSubtitle($font_size);
@@ -1321,121 +1257,6 @@ class HighChart2
 			}
 		} // if not pie
 	} // function buildErrorDataSeries
-
-		/**
-		 * Add extension functions to the chart.
-		 */
-		protected function addChartExtensions() {
-			// Allow for multiple event handlers for certain events.
-			// Based on: https://stackoverflow.com/a/22337004
-			$this->_chart['chart']['events']['load'] = 'function () {
-					var eventHandlers = this.options.chart.events.loadHandlers;
-					if (!eventHandlers) {
-							return;
-					}
-					for (var i = 0; i < eventHandlers.length; i++) {
-							eventHandlers[i].apply(this, arguments);
-					}
-			}';
-			$this->_chart['chart']['events']['redraw'] = 'function () {
-					var eventHandlers = this.options.chart.events.redrawHandlers;
-					if (!eventHandlers) {
-							return;
-					}
-					for (var i = 0; i < eventHandlers.length; i++) {
-							eventHandlers[i].apply(this, arguments);
-					}
-			}';
-
-			// Add function to add a background color to a chart element.
-			// (This is for chart elements that don't support this natively.)
-			// Idea for using rectangles as background color from: https://stackoverflow.com/a/21625239
-			$this->_chart['chart']['events']['helperFunctions']['addBackgroundColor'] = 'function (element, color) {
-					var xPadding = 3;
-					var yPadding = 2;
-					var rectCornerRadius = 1;
-
-					var elementBBox = element.getBBox();
-					return element.renderer.rect(
-							elementBBox.x - xPadding,
-							elementBBox.y - yPadding,
-							elementBBox.width + (xPadding * 2),
-							elementBBox.height + (yPadding * 2),
-							rectCornerRadius
-					).attr({
-							fill: color,
-							zIndex: (element.zIndex ? element.zIndex : 0) - 1
-					}).add(element.parentGroup);
-			}';
-
-			// Add functions to handle aligned labels.
-			// Based on: https://stackoverflow.com/a/19326076
-			$this->_chart['chart']['events']['helperFunctions']['alignAlignedLabels'] = 'function (chart) {
-					var alignedLabels = chart.alignedLabels;
-					if (!alignedLabels) {
-							return;
-					}
-					for (var i = 0; i < alignedLabels.length; i++) {
-							var alignedLabel = alignedLabels[i];
-							var labelObject = alignedLabel.label;
-							var labelBackground = alignedLabel.background;
-
-							labelObject.align(Highcharts.extend(
-									labelObject.getBBox(),
-									chart.options.alignedLabels.items[i]
-							), null, chart.renderer.spacingBox);
-							if (labelBackground) {
-									labelBackground.align(Highcharts.extend(
-											labelObject.getBBox(),
-											chart.options.alignedLabels.items[i]
-									), null, chart.renderer.spacingBox);
-							}
-					}
-			}';
-			$this->_chart['chart']['events']['loadHandlers'][] = 'function () {
-					var chart = this;
-					var alignedLabelsOptions = chart.options.alignedLabels;
-					if (!alignedLabelsOptions) {
-							return;
-					}
-
-					chart.alignedLabels = [];
-					for (var i = 0; i < alignedLabelsOptions.items.length; i++) {
-							var alignedLabel = {};
-							var alignedLabelOptions = alignedLabelsOptions.items[i];
-							alignedLabel.group = chart.renderer.g().add();
-							alignedLabel.label = chart.renderer.label(alignedLabelOptions.html).add(alignedLabel.group);
-
-							if (alignedLabelOptions.backgroundColor) {
-									alignedLabel.background = chart.options.chart.events.helperFunctions.addBackgroundColor(alignedLabel.label, alignedLabelOptions.backgroundColor);
-									alignedLabel.label.toFront();
-							}
-							chart.alignedLabels.push(alignedLabel);
-					}
-					chart.options.chart.events.helperFunctions.alignAlignedLabels(chart);
-			}';
-			$this->_chart['chart']['events']['redrawHandlers'][] = 'function () {
-					var chart = this;
-					chart.options.chart.events.helperFunctions.alignAlignedLabels(chart);
-			}';
-
-			// Add functions to style labels for data series restricted by roles.
-			$this->_chart['chart']['events']['loadHandlers'][] = 'function () {
-					var chart = this;
-					if (!chart.series || chart.options.chart.showWarnings === false) {
-							return;
-					}
-
-					for (var i = 0; i < chart.series.length; i++) {
-							var series = chart.series[i];
-							if (!series.options.isRestrictedByRoles) {
-									continue;
-							}
-
-							chart.options.chart.events.helperFunctions.addBackgroundColor(series.legendItem, "#DFDFDF");
-					}
-			}';
-		}
 
 		/**
 		 * Add a warning to the chart that data may be restricted.

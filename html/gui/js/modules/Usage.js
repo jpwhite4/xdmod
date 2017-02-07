@@ -2627,7 +2627,113 @@ Ext.extend(XDMoD.Module.Usage, XDMoD.PortalModule, {
                                     renderTo: id,
                                     width: chartWidth * chartScale,
                                     height: chartHeight * chartScale,
-                                    animation: false
+                                    animation: false,
+                                    events: {
+                                        load: function () {
+                                            var eventHandlers = this.options.chart.events.loadHandlers;
+                                            if (!eventHandlers) {
+                                                return;
+                                            }
+                                            for (var i = 0; i < eventHandlers.length; i++) {
+                                                eventHandlers[i].apply(this, arguments);
+                                            }
+                                        },
+                                        redraw: function () {
+                                            var eventHandlers = this.options.chart.events.redrawHandlers;
+                                            if (!eventHandlers) {
+                                                return;
+                                            }
+                                            for (var i = 0; i < eventHandlers.length; i++) {
+                                                eventHandlers[i].apply(this, arguments);
+                                            }
+                                        },
+                                        helperFunctions: {
+                                            addBackgroundColor: function (element, color) {
+                                                var xPadding = 3;
+                                                var yPadding = 2;
+                                                var rectCornerRadius = 1;
+
+                                                var elementBBox = element.getBBox();
+                                                return element.renderer.rect(
+                                                        elementBBox.x - xPadding,
+                                                        elementBBox.y - yPadding,
+                                                        elementBBox.width + xPadding * 2,
+                                                        elementBBox.height + yPadding * 2,
+                                                        rectCornerRadius
+                                                        ).attr({
+                                                            fill: color,
+                                                        zIndex: (element.zIndex ? element.zIndex : 0) - 1
+                                                        }).add(element.parentGroup);
+                                            },
+                                            alignAlignedLabels: function (chart) {
+                                                var alignedLabels = chart.alignedLabels;
+                                                if (!alignedLabels) {
+                                                    return;
+                                                }
+                                                for (var i = 0; i < alignedLabels.length; i++) {
+                                                    var alignedLabel = alignedLabels[i];
+                                                    var labelObject = alignedLabel.label;
+                                                    var labelBackground = alignedLabel.background;
+
+                                                    labelObject.align(Highcharts.extend(
+                                                                labelObject.getBBox(),
+                                                                chart.options.alignedLabels.items[i]
+                                                                ), null, chart.renderer.spacingBox);
+                                                    if (labelBackground) {
+                                                        labelBackground.align(Highcharts.extend(
+                                                                    labelObject.getBBox(),
+                                                                    chart.options.alignedLabels.items[i]
+                                                                    ), null, chart.renderer.spacingBox);
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        loadHandlers: [
+                                            function () {
+                                                var chart = this;
+                                                var alignedLabelsOptions = chart.options.alignedLabels;
+                                                if (!alignedLabelsOptions) {
+                                                    return;
+                                                }
+
+                                                chart.alignedLabels = [];
+                                                for (var i = 0; i < alignedLabelsOptions.items.length; i++) {
+                                                    var alignedLabel = {};
+                                                    var alignedLabelOptions = alignedLabelsOptions.items[i];
+                                                    alignedLabel.group = chart.renderer.g().add();
+                                                    alignedLabel.label = chart.renderer.label(alignedLabelOptions.html).add(alignedLabel.group);
+
+                                                    if (alignedLabelOptions.backgroundColor) {
+                                                        alignedLabel.background = chart.options.chart.events.helperFunctions.addBackgroundColor(alignedLabel.label, alignedLabelOptions.backgroundColor);
+                                                        alignedLabel.label.toFront();
+                                                    }
+                                                    chart.alignedLabels.push(alignedLabel);
+                                                }
+                                                chart.options.chart.events.helperFunctions.alignAlignedLabels(chart);
+                                            },
+                                            function () {
+                                                var chart = this;
+                                                if (!chart.series || chart.options.chart.showWarnings === false) {
+                                                    return;
+                                                }
+
+                                                for (var i = 0; i < chart.series.length; i++) {
+                                                    var series = chart.series[i];
+                                                    if (!series.options.isRestrictedByRoles) {
+                                                        continue;
+                                                    }
+
+                                                    chart.options.chart.events.helperFunctions.addBackgroundColor(series.legendItem, "#DFDFDF");
+                                                }
+                                            }
+                                        ],
+                                        redrawHandlers: [
+                                            function () {
+                                                var chart = this;
+                                                chart.options.chart.events.helperFunctions.alignAlignedLabels(chart);
+                                            }
+                                        ]
+                                    }
 
                                 },
 
