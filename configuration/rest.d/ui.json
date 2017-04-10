@@ -1,0 +1,6 @@
+{
+    "ui": {
+        "prefix": "ui",
+        "controller": "NewRest\\Controllers\\UIControllerProvider"
+    }
+}

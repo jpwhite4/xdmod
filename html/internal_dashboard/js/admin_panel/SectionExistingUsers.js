@@ -753,14 +753,6 @@ XDMoD.ExistingUsers = Ext.extend(Ext.Panel, {
                     return;
                 }
 
-                if (!roleGrid.isPrimaryRoleSpecified()) {
-                    CCR.xdmod.ui.userManagementMessage(
-                        'This user must have a primary role assigned.',
-                        false
-                    );
-                    return;
-                }
-				
 				var sel_roles = roleGrid.getSelections();
 				
                 // ===========================================
@@ -1145,8 +1137,6 @@ XDMoD.ExistingUsers = Ext.extend(Ext.Panel, {
 
                         roleGrid.setCenterConfig(XDMoD.Admin.Roles.CENTER_DIRECTOR, json.user_information.center_director_sites);
                         roleGrid.setCenterConfig(XDMoD.Admin.Roles.CENTER_STAFF, json.user_information.center_staff_sites);
-
-                        roleGrid.setPrimaryRole(json.user_information.primary_role);
 
                         userSettings.setDisabled(false);
                         userEditor.hideMask();

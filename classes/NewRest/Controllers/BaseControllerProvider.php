@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Exception\MissingMandatoryParametersException;
+use User\Acl;
 
 /**
  * Class BaseControllerProvider
@@ -264,7 +265,7 @@ abstract class BaseControllerProvider implements ControllerProviderInterface
      * @throws  Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException
      *          Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException
      */
-    public function authorize(Request $request, array $requirements = null, $blacklist = false)
+    public function authorize(Request $request, array $requirements = array(), $blacklist = false)
     {
         // If role requirements were not given, then the only check to perform
         // is that the user is not a public user.
@@ -275,7 +276,7 @@ abstract class BaseControllerProvider implements ControllerProviderInterface
 
         // Attempt to authorize the user.
         $user = $this->getUserFromRequest($request);
-        list($success, $message) = Authorization::isAuthorized($user, $requirements, $blacklist);
+        list($success, $message) = Authorization::authorized($user, $requirements, $blacklist);
 
         // If authorization was not successful, throw an exception.
         //
@@ -709,4 +710,19 @@ abstract class BaseControllerProvider implements ControllerProviderInterface
 
     }  // formatLogMessage()
 
+    /**
+     * Attempt to ascertain whether or not the user logged into the provided
+     * '$request' has been assigned the required acls.
+     *
+     * @param Request  $request      to be used when retrieving the currently
+     *                               logged in user
+     * @param string[] $requirements the acls that are required be found to
+     *                               return true.
+     * @return bool true iff all requirements are found else false.
+     */
+    protected function isAuthorized(Request $request, array $requirements)
+    {
+        $user = $request->attributes->get(BaseControllerProvider::_USER);
+        return $user->hasAcls($requirements);
+    }
 }

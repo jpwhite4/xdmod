@@ -1,0 +1,41 @@
+{
+    "table_definition": {
+        "name": "group_by_statistics",
+        "engine": "InnoDB",
+        "comment": "Tracks which `statistics` have been associated with which `group_bys`",
+        "columns": [
+            {
+                "name": "group_by_statistic_id",
+                "type": "integer",
+                "nullable": false,
+                "extra": "auto_increment"
+            },
+            {
+                "name": "group_by_id",
+                "type": "integer",
+                "nullable": false
+            },
+            {
+                "name": "statistic_id",
+                "type": "integer",
+                "nullable": false
+            },
+            {
+                "name": "visible",
+                "type": "boolean",
+                "nullable": false,
+                "default": true
+            }
+        ],
+        "indexes": [
+            {
+                "name": "PRIMARY",
+                "columns": [
+                    "group_by_statistic_id"
+                ],
+                "type": "BTREE",
+                "is_unique": true
+            }
+        ]
+    }
+}

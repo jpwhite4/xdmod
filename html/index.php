@@ -5,7 +5,9 @@
       The Center For Computational Research, University At Buffalo
    */
 
-   @session_start();
+use User\Acls;
+
+@session_start();
 
    // Fix to the 'trailing slash' issue -------------------------------
 
@@ -241,9 +243,8 @@
          $manager = $user->isManager() ? 'true' : 'false';
          $developer = $user->isDeveloper() ? 'true' : 'false';
 
-         $primary_center_director = (
-               ($user->getActiveRole()->getIdentifier() == ROLE_ID_CENTER_DIRECTOR) &&
-               true //($user->getPromoter(ROLE_ID_CENTER_DIRECTOR, $user->getActiveRole()->getActiveCenter()) == -1)
+         $primary_center_director = ( $user->hasAcl(ROLE_ID_CENTER_DIRECTOR)  &&
+               true
          ) ? 'true' : 'false';
 
       ?>
@@ -275,18 +276,19 @@
                print "CCR.xdmod.ui.isManager = $manager;\n";
                print "CCR.xdmod.ui.isDeveloper = $developer;\n";
                print "CCR.xdmod.ui.isCenterDirector = $primary_center_director;\n";
-
-               print "CCR.xdmod.ui.active_role_label = '{$user->getActiveRole()->getFormalName()}';\n";
             }
 
-            print "CCR.xdmod.ui.disabledMenus = ".json_encode($user->getDisabledMenus(
-                array_keys($user->getActiveRole()->getAllQueryRealms('tg_usage'))
-            )).";\n";
+            print "CCR.xdmod.ui.disabledMenus = ".json_encode(
+                    Acls::getDisabledMenus(
+                            $user,
+                            Realms::listRealmsForUserId(
+                                    $user->getUserID()
+                            )
+                    )
+                ) .";\n";
 
             if ($userLoggedIn) {
                print "CCR.xdmod.ui.allRoles = ".json_encode($user->enumAllAvailableRoles())."\n";
-
-               print "CCR.xdmod.ui.activeRole = '".$user->getActiveRole()->getIdentifier(true)."';\n";
             }
 
             print "CCR.xdmod.org_name = ".json_encode(ORGANIZATION_NAME).";\n";

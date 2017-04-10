@@ -44,7 +44,8 @@ class AuthenticationControllerProvider extends BaseControllerProvider
      */
     public function login(Request $request, Application $app)
     {
-        $user = $this->authorize($request);
+        $this->authenticate($request, $app);
+        $user = $request->get(BaseControllerProvider::_USER);
 
         $token = \XDSessionManager::recordLogin($user);
 

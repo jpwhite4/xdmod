@@ -5,6 +5,8 @@ namespace NewRest\Controllers;
 use DataWarehouse\Query\Exceptions\AccessDeniedException;
 use DataWarehouse\Query\Exceptions\NotFoundException;
 use DataWarehouse\Query\Exceptions\BadRequestException;
+use Realm;
+use Realms;
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Silex\ControllerCollection;
@@ -12,6 +14,7 @@ use Silex\ControllerCollection;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Exception\MissingMandatoryParametersException;
 
+use User\Acls;
 use XDUser;
 use DataWarehouse\Access\MetricExplorer;
 use DataWarehouse\Access\Usage;
@@ -252,10 +255,6 @@ class WarehouseControllerProvider extends BaseControllerProvider
             ->convert('action', "$conversions::toString");
 
         // Metrics routes
-
-        $controller
-            ->get("$root/query_groups", "$current::getQueryGroups");
-
         $controller
             ->get("$root/realms", "$current::getRealms");
 
@@ -668,29 +667,6 @@ class WarehouseControllerProvider extends BaseControllerProvider
     }
 
     /**
-     * Get the query groups available for the user's active role.
-     *
-     * Ported from: classes/REST/DataWarehouse/Explorer.php
-     *
-     * @param  Request $request The request used to make this call.
-     * @param  Application $app The router application.
-     * @return Response             A response containing the following info:
-     *                              success: A boolean indicating if the call was successful.
-     *                              results: An object containing data about
-     *                                       the query groups retrieved.
-     */
-    public function getQueryGroups(Request $request, Application $app)
-    {
-        $user = $this->authorize($request);
-
-        // Return the query groups that are available for the user's active role.
-        return $app->json(array(
-            'success' => true,
-            'results' => $user->getActiveRole()->getAllGroupNames(),
-        ));
-    }
-
-    /**
      * Get the realms available for the user's active role.
      *
      * Ported from: classes/REST/DataWarehouse/Explorer.php
@@ -704,18 +680,22 @@ class WarehouseControllerProvider extends BaseControllerProvider
      */
     public function getRealms(Request $request, Application $app)
     {
-        $user = $this->authorize($request);
+        $this->authorize($request);
 
-        // Get parameters.
-        $queryGroup = $this->getStringParam($request, 'querygroup', false, self::_DEFAULT_QUERY_GROUP);
-
-        // Get the realms for the query group and the user's active role.
-        $realms = array_keys($user->getActiveRole()->getAllQueryRealms($queryGroup));
+        $realms = Realms::listRealms();
+        $success = isset($realms);
+        $data = array();
+        if ($success == true) {
+            $data = array_reduce($realms, function ($carry, Realm $item) {
+                $carry []= $item->getDisplay();
+                return $carry;
+            }, array());
+        }
 
         // Return the realms found.
         return $app->json(array(
-            'success' => true,
-            'results' => $realms,
+            'success' => $success,
+            'results' => $data,
         ));
     }
 
@@ -856,8 +836,7 @@ class WarehouseControllerProvider extends BaseControllerProvider
                 $filtersByFilterId[$serviceProviderDimensionId][$serviceProvider['id']] = array(
                     'valueName' => $serviceProvider['short_name'],
                     'valueId' => $serviceProvider['id'],
-                    'isUserSpecificFilter' => false,
-                    'isMostPrivilegedRoleFilter' => false,
+                    'isUserSpecificFilter' => false
                 );
                 $filters[$serviceProviderDimensionId][] = &$filtersByFilterId[$serviceProviderDimensionId][$serviceProvider['id']];
             }
@@ -865,11 +844,8 @@ class WarehouseControllerProvider extends BaseControllerProvider
 
         // Generate user-specific quick filters if logged in.
         if (!$user->isPublicUser()) {
-            $roles = $user->getAllRoles();
-            $mostPrivilegedRoleIdentifier = $user->getMostPrivilegedRole()->getIdentifier(true);
+            $roles = $user->getAcls();
             foreach ($roles as $role) {
-                $roleIdentifier = $role->getIdentifier(true);
-                $isMostPrivilegedRole = $roleIdentifier === $mostPrivilegedRoleIdentifier;
                 foreach ($role->getParameters() as $dimensionId => $valueId) {
                     if (!$multipleProvidersSupported && $dimensionId === $serviceProviderDimensionId) {
                         continue;
@@ -877,9 +853,6 @@ class WarehouseControllerProvider extends BaseControllerProvider
 
                     if (isset($filtersByFilterId[$dimensionId][$valueId])) {
                         $filtersByFilterId[$dimensionId][$valueId]['isUserSpecificFilter'] = true;
-                        if ($isMostPrivilegedRole) {
-                            $filtersByFilterId[$dimensionId][$valueId]['isMostPrivilegedRoleFilter'] = true;
-                        }
                         continue;
                     }
 
@@ -892,7 +865,6 @@ class WarehouseControllerProvider extends BaseControllerProvider
                         'valueName' => $valueName,
                         'valueId' => $valueId,
                         'isUserSpecificFilter' => true,
-                        'isMostPrivilegedRoleFilter' => $isMostPrivilegedRole,
                     );
                     $filters[$dimensionId][] = &$filtersByFilterId[$dimensionId][$valueId];
 
@@ -1224,13 +1196,11 @@ class WarehouseControllerProvider extends BaseControllerProvider
     public function _processJobSearch(Request $request, Application $app, XDUser $user, $realm, $startDate, $endDate, $action)
     {
 
-        $activeRole = $user->getActiveRole();
-        $queryRealms = isset($activeRole) ? $activeRole->getAllQueryRealms('tg_usage') : array();
 
         $offset = $this->getIntParam($request, 'start', true);
         $limit = $this->getIntParam($request, 'limit', true);
 
-        $allowableDimensions = array_keys($queryRealms[$realm]);
+        $allowableDimensions = Acls::getGroupBysForRealm($realm);
 
         $params = $this->_parseRestArguments($request, $allowableDimensions, false, 'params');
 
@@ -1247,7 +1217,7 @@ class WarehouseControllerProvider extends BaseControllerProvider
             $QueryClass = "\\DataWarehouse\\Query\\$realm\\RawData";
             $query = new $QueryClass("day", $startDate, $endDate, null, "", array(), 'tg_usage', array(), false);
 
-            $allRoles = $user->getAllRoles();
+            $allRoles = $user->getAcls();
             $query->setMultipleRoleParameters($allRoles);
 
             $query->setRoleParameters($params);
@@ -1392,7 +1362,7 @@ class WarehouseControllerProvider extends BaseControllerProvider
         $QueryClass = "\\DataWarehouse\\Query\\$realm\\JobDataset";
         $query = new $QueryClass($params, $action);
 
-        $allRoles = $user->getAllRoles();
+        $allRoles = $user->getAcls();
         $query->setMultipleRoleParameters($allRoles);
 
         $dataSet = new \DataWarehouse\Data\RawDataset($query, $user);
@@ -1931,7 +1901,7 @@ class WarehouseControllerProvider extends BaseControllerProvider
         $QueryClass = "\\DataWarehouse\\Query\\$realm\\JobDataset";
         $query = new $QueryClass($params, "brief");
 
-        $allRoles = $user->getAllRoles();
+        $allRoles = $user->getAcls();
         $query->setMultipleRoleParameters($allRoles);
 
         $dataSet = new \DataWarehouse\Data\RawDataset($query, $user);

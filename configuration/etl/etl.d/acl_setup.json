@@ -1,0 +1,118 @@
+{
+  "#": "Setup of Module Table",
+  "defaults": {
+    "acls": {
+      "namespace": "ETL\\Maintenance",
+      "options_class": "MaintenanceOptions",
+      "endpoints": {
+        "destination": {
+          "type": "mysql",
+          "name": "Database",
+          "config": "database",
+          "schema": "moddb"
+        }
+      }
+    }
+  },
+  "acls": [
+    {
+      "name": "ACLTableManagement",
+      "class": "ManageTables",
+      "description": "Manage ACL related tables",
+      "definition_file_list": [
+        "modules.json",
+        "realms.json",
+        "hierarchies.json",
+        "asset_types.json",
+        "acl_types.json",
+        "acls.json",
+        "assets.json",
+        "group_bys.json",
+        "statistics.json",
+        "charts.json",
+        "filters.json",
+        "realm_assets.json",
+        "acl_hierarchies.json",
+        "acl_assets.json",
+        "module_versions.json",
+        "user_charts.json",
+        "user_acls.json",
+        "acl_charts.json",
+        "group_by_filters.json",
+        "acl_filters.json",
+        "report_template_acl.json",
+        "acl_group_bys.json",
+        "group_by_statistics.json",
+        "tabs.json",
+        "acl_tabs.json",
+        "user_acl_filters.json"
+      ],
+      "enabled": true
+    },
+    {
+      "name": "ACLTableImport",
+      "class": "ExecuteSql",
+      "endpoints": {
+        "source": {
+          "name": "source",
+          "type": "mysql",
+          "config": "database",
+          "schema": "moddb"
+        },
+        "destination": {
+          "name": "destination",
+          "type": "mysql",
+          "config": "database",
+          "schema": "moddb"
+        }
+      },
+      "sql_file_list": [
+        {
+          "sql_file": "acls/modules.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/module_versions.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/realms.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/acl_types.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/acls.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/user_acls.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/report_template_acl.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/group_bys.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/statistics.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/tabs.sql",
+          "delimiter": "//"
+        },
+        {
+          "sql_file": "acls/acl_tabs.sql",
+          "delimiter": "//"
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}
