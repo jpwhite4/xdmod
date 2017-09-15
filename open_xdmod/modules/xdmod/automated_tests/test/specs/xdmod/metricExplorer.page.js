@@ -87,6 +87,9 @@ class MetricExplorer {
                 titleByText: function (title) {
                     return module.exports.selectors.chart.svg + '/*[name()="text" and contains(@class, "title")]/*[name()="tspan" and contains(text(),"' + title + '")]';
                 },
+                credits: function () {
+                    return module.exports.selectors.chart.svg + '/*[name()="text"]/*[name()="tspan" and contains(text(),"Powered by XDMoD")]';
+                },
                 yAxisTitle: function () {
                     return module.exports.selectors.chart.svg + '//*[name() = "g" and contains(@class, "highcharts-axis")]/*[name() = "text" and contains(@class,"highcharts-yaxis-title")]';
                 },
@@ -221,8 +224,24 @@ class MetricExplorer {
         browser.waitAndClick(this.selectors.load.chartByName(name));
         browser.waitForInvisible(this.selectors.load.dialog);
     }
-    checkChart(chartTitle, yAxisLabel, legend) {
+    checkChart(chartTitle, yAxisLabel, legend, isValidChart = true) {
         browser.waitForVisible(this.selectors.chart.titleByText(chartTitle));
+        var selToCheck;
+        if (isValidChart) {
+                selToCheck = this.selectors.chart.credits();
+        } else {
+                selToCheck = this.selectors.chart.titleByText(chartTitle);
+        }
+	browser.waitForVisible(selToCheck);
+	for(let i = 0; i < 100; i++) {
+		try {
+			browser.click(selToCheck);
+			break;
+		} catch (e) {
+			console.log(i, e);
+			browser.waitForExist('.ext-el-mask', 9000, true);
+		}
+	}
 
         if (yAxisLabel) {
             browser.waitForExist(this.selectors.chart.yAxisTitle());
@@ -389,7 +408,16 @@ class MetricExplorer {
     switchToAggregate() {
         browser.waitAndClick(this.selectors.options.button);
         browser.waitAndClick(this.selectors.options.aggregate);
-        browser.waitAndClick('.xtb-text.logo93');
+	browser.waitForVisible('.xtb-text.logo93');
+	for(let i = 0; i < 100; i++) {
+		try {
+			browser.click('.xtb-text.logo93');
+			break;
+		}
+		catch (e) {
+			browser.waitUntilNotExist('.ext-el-mask');
+		}
+	}
         browser.waitForInvisible(this.selectors.options.aggregate);
         browser.waitUntilNotExist('.ext-el-mask');
     }

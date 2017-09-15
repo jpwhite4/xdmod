@@ -125,7 +125,7 @@ describe('Metric Explorer', function metricExplorer() {
             me.waitForChartToChange(me.switchToAggregate);
         });
         it('Check that error message is displayed', function () {
-            me.checkChart('An error occurred while loading the chart.');
+            me.checkChart('An error occurred while loading the chart.', null, null, false);
         });
         it('Undo Scratch Pad switch to aggregate', function () {
             me.waitForChartToChange(me.undoAggregateOrTrendLine, $container);
@@ -176,6 +176,7 @@ describe('Metric Explorer', function metricExplorer() {
             me.checkChart(chartName, 'Node Hours: Total', 'Screwdriver');
         });
     });
+
     describe('Context Menu', function contextMenu() {
         it('Start with scratchpad', function () {
             browser.refresh();
@@ -214,9 +215,8 @@ describe('Metric Explorer', function metricExplorer() {
             actions.chart.contextMenu.addFilter();
         });
         describe('Legend Menus', function () {
-            actions.chart.contextMenu.setLegendPosition('Top Left');
-            actions.chart.contextMenu.setLegendPosition('Top Right');
-            browser.pause(5000);
+	    me.waitForChartToChange(actions.chart.contextMenu.setLegendPosition, 'Top Left');
+	    me.waitForChartToChange(actions.chart.contextMenu.setLegendPosition, 'Top Right');
             describe('Verify after load', function () {
                 actions.chart.load(1);
                 actions.chart.contextMenu.open();

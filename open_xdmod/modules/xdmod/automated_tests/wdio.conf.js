@@ -13,6 +13,21 @@ var FireFox = {
     screenResolution: '2560x1600'
 };
 
+var HeadlessChrome = {
+    browserName: 'chrome',
+    chromeOptions: {
+        args: [
+            'incognito',
+            '--no-sandbox',
+            '--headless',
+            '--no-gpu',
+            'disable-extensions',
+            'start-maximized',
+            'window-size=2560,1600'
+        ]
+    }
+};
+
 var Chrome = {
     browserName: 'chrome',
     platform: 'Windows 10',
@@ -44,6 +59,18 @@ var PhantomJS = {
     ]
 };
 
+var secrets = require('./.secrets');
+
+var capabilities = [Chrome];
+var services = ['selenium-standalone'];
+var port = 4444;
+
+if (process.env.WDIO_MODE === 'headless') {
+	capabilities = [HeadlessChrome];
+	services = ['chromedriver'];
+	port = 9515;
+}
+
 exports.config = {
     // ==================
     // Specify Test Files
@@ -54,7 +81,7 @@ exports.config = {
     // directory is where your package.json resides, so `wdio` will be called from there.
     //
     specs: [
-        './test/specs/**/*.js'
+        './test/specs/xdmod/metricExplorer.js'
     ],
 
     // Patterns to exclude.
@@ -91,9 +118,7 @@ exports.config = {
     // test should run tests.
     maxInstances: 1,
 
-    capabilities: [
-        Chrome
-    ],
+    capabilities: capabilities,
     //
     // ===================
     // Test Configurations
@@ -117,10 +142,15 @@ exports.config = {
     //
     // Set a base URL in order to shorten url command calls. If your url parameter starts
     // with '/', the base url gets prepended.
-    baseUrl: 'https://tas-reference-dbs.ccr.xdmod.org',
+    baseUrl: secrets.url,
     //
     // Default timeout for all waitForXXX commands.
     waitforTimeout: 10000,
+
+    path: '/',
+
+    port: port,
+
     //
     // Initialize the browser instance with a WebdriverIO plugin. The object should have the
     // plugin name as key and the desired plugin options as property. Make sure you have
@@ -140,9 +170,7 @@ exports.config = {
     //     browserevent: {}
     // },
     //
-    services: [
-        'selenium-standalone'
-    ],
+    services: services,
     // Framework you want to run your specs with.
     // The following are supported: mocha, jasmine and cucumber
     // see also: http://webdriver.io/guide/testrunner/frameworks.html
