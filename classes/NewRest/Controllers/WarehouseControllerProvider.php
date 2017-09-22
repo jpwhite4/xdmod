@@ -1868,7 +1868,7 @@ class WarehouseControllerProvider extends BaseControllerProvider
      * @param $type the type of image to generate
      * @return Response the image as an attachment
      */
-    private function chartImageResponse($data, $type)
+    private function chartImageResponse($data, $type, $settings)
     {
         // Enable plot marker only if a single point is present in the data series' plot data.
         // Otherwise plot the data with a line.
@@ -1885,6 +1885,10 @@ class WarehouseControllerProvider extends BaseControllerProvider
             }
         }
 
+        $axisTitleFontSize = ($settings['font_size'] + 12) . 'px';
+        $axisLabelFontSize = ($settings['font_size'] + 11) . 'px';
+        $mainTitleFontSize = ($settings['font_size'] + 16) . 'px';
+
         $chartConfig = array(
             'colors' => array( '#2f7ed8', '#0d233a', '#8bbc21', '#910000', '#1aadce', '#492970',
                         '#f28f43', '#77a1e5', '#c42525', '#a6c96a'
@@ -1893,10 +1897,18 @@ class WarehouseControllerProvider extends BaseControllerProvider
             'xAxis' => array(
                 'type' => 'datetime',
                 'minTickInterval' => 1000,
+                'labels' => array(
+                    'style' => array(
+                        'fontWeight'=> 'normal',
+                        'fontSize' => $axisLabelFontSize
+                    ),
+                ),
+                'lineWidth' => 1 + $settings['scale'],
                 'title' => array(
                     'style' => array(
                         'fontWeight' => 'bold',
-                        'color' => '#5078a0'
+                        'color' => '#5078a0',
+                        'fontSize' => $axisTitleFontSize
                     ),
                     'text' => 'Time (' . $data['schema']['timezone'] . ')'
                 )
@@ -1905,9 +1917,17 @@ class WarehouseControllerProvider extends BaseControllerProvider
                 'title' => array(
                     'style' => array(
                         'fontWeight' => 'bold',
-                        'color' => '#5078a0'
+                        'color' => '#5078a0',
+                        'fontSize' => $axisTitleFontSize
                     ),
                     'text' => $data['schema']['units']
+                ),
+                'lineWidth' => 1 + $settings['scale'],
+                'labels' => array(
+                    'style' => array(
+                        'fontWeight'=> 'normal',
+                        'fontSize' => $axisLabelFontSize
+                    ),
                 ),
                 'min' => 0.0
             ),
@@ -1916,10 +1936,15 @@ class WarehouseControllerProvider extends BaseControllerProvider
             ),
             'plotOptions' => array(
                 'line' => array(
+                    'lineWidth' => 1 + $settings['scale'],
                     'marker' => array(
                         'enabled' => $markerEnabled
                     )
                 )
+            ),
+            'credits' => array(
+                'text' => $data['schema']['source'] . '. Powered by XDMoD/Highcharts',
+                'href' => ''
             ),
             'exporting' => array(
                 'enabled' => false
@@ -1927,10 +1952,10 @@ class WarehouseControllerProvider extends BaseControllerProvider
             'title' => array(
                 'style' => array(
                     'color' => '#444b6e',
-                    'fontSize' => '16px'
+                    'fontSize' => $mainTitleFontSize
                 ),
 
-                'text' => $data['schema']['description']
+                'text' => $settings['show_title'] ? $data['schema']['description'] : null
             )
         );
 
@@ -1938,7 +1963,13 @@ class WarehouseControllerProvider extends BaseControllerProvider
             'timezone' => $data['schema']['timezone']
         );
 
-        $chartImage = \xd_charting\exportHighchart($chartConfig, 916, 484, 1, $type, $globalConfig);
+        if ($type == 'pdf') {
+            $svgImage = \xd_charting\exportHighchart($chartConfig, $settings['width'], $settings['height'], $settings['scale'], 'svg', $globalConfig);
+            $chartImage = \xd_charting\convertSvgToPdf($svgImage, $settings['width'] / 90.0, $settings['height'] / 90.0);
+        } else {
+            $chartImage = \xd_charting\exportHighchart($chartConfig, $settings['width'], $settings['height'], $settings['scale'], $type, $globalConfig);
+        }
+
         $chartFilename = $data['schema']['description'] . '.' . $type;
         $mimeOverride = $type == 'svg' ? 'image/svg+xml' : null;
 
@@ -1957,17 +1988,28 @@ class WarehouseControllerProvider extends BaseControllerProvider
 
         $resultMimeType = $this->getAcceptContentType(
             $request,
-            array('text/csv', 'image/png', 'image/svg', 'image/svg+xml', 'application/json'),
+            array('text/csv', 'image/png', 'image/svg', 'image/svg+xml', 'application/pdf', 'application/json'),
             'filetype'
+        );
+
+        $exportConfig = array(
+            'width' => $this->getIntParam($request, 'width', false, 916),
+            'height' => $this->getIntParam($request, 'height', false, 484),
+            'scale' => floatval($this->getStringParam($request, 'scale', false, '1')),
+            'font_size' => $this->getIntParam($request, 'font_size', false, 3),
+            'show_title' => $this->getStringParam($request, 'show_title', false, 'y') === 'y' ? true : false
         );
 
         switch ($resultMimeType) {
             case 'image/png':
-                $response = $this->chartImageResponse($results, 'png');
+                $response = $this->chartImageResponse($results, 'png', $exportConfig);
+                break;
+            case 'application/pdf':
+                $response = $this->chartImageResponse($results, 'pdf', $exportConfig);
                 break;
             case 'image/svg+xml':
             case 'image/svg':
-                $response = $this->chartImageResponse($results, 'svg');
+                $response = $this->chartImageResponse($results, 'svg', $exportConfig);
                 break;
             case 'text/csv':
                 $response = $this->chartDataResponse($results);

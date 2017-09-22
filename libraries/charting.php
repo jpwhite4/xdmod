@@ -209,6 +209,25 @@
       	      
    }//exportHighchart
    
+   function convertSvgToPdf($svgContent, $widthInches, $heightInches)
+   {
+       $tmpfile = tempnam(sys_get_temp_dir(), 'svgexport');
+       $svgfile = $tmpfile . '.svg';
+       $pdffile = $tmpfile . '.pdf';
+
+       file_put_contents($svgfile, $svgContent);
+
+       $success = -1;
+       system("/data/www/jpwhite4/bin/svg2pdf $svgfile $widthInches $heightInches > /dev/null 2>&1", $success);
+
+       $data = file_get_contents($pdffile);
+
+       @unlink($svgfile);
+       @unlink($tmpfile);
+       @unlink($pdffile);
+
+       return $data;
+   }
    
 	function replace_functions(&$object, array &$value_arr, array &$replace_keys, &$xxx = 1)
 	{

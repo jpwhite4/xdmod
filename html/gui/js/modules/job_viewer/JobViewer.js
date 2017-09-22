@@ -61,6 +61,11 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
     // PORTAL MODULE TOOLBAR CONFIG ===========================================
     usesToolbar: true,
 
+    toolbarItems: {
+        exportMenu: true
+    },
+
+
     // PROPERTIES =============================================================
     token: XDMoD.REST.token, /*NOTE: This is populated via PHP. So will this render only once? */
     timeSeriesURL: '/rest/supremm/explorer/hctimeseries/',
@@ -108,7 +113,6 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
         //        supposed to.
         this.on('role_selection_change', this.noOpt);
         this.on('duration_change', this.noOpt);
-        this.on('export_option_selected', this.noOpt);
         this.on('print_clicked', this.noOpt);
 
         this.addEvents(
@@ -216,7 +220,7 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
         });
 
         this.getTopToolbar().insert(0, searchButton);
-        this.getTopToolbar().insert(1, '->');
+        this.getTopToolbar().insert(1, '-');
     }, // setupToolbar
 
     /**
@@ -916,6 +920,7 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
          **/
         activate: function () {
             if (!this.loadMask) {
+                this.getExportMenu().setDisabled(true);
                 this.loadMask = new Ext.LoadMask(this.id);
             }
             Highcharts.setOptions({ global: { timezone: this.cachedHighChartTimezone } });
@@ -956,6 +961,7 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
             }
 
             if (params.recordid && params.jobid) {
+                this.getExportMenu().setDisabled(!params.tsid);
                 if (params.infoid) {
                     this.fireEvent('process_view_node', path);
                 } else {
@@ -996,6 +1002,17 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
 
             this.clearing = false;
         }, // clear_display
+
+        export_option_selected: function (exportParams) {
+            try {
+                var activeTab = Ext.getCmp(this.tabpanel_id).getActiveTab().findByType('tabpanel')[0].getActiveTab();
+                if (activeTab) {
+                    activeTab.fireEvent('export_option_selected', exportParams);
+                }
+            } catch (e) {
+                console.log(e);
+            }
+        },
 
         /**
          * Process the given path for a job node history event.

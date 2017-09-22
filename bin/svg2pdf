@@ -1,0 +1,35 @@
+#!/bin/bash
+# Convert svg file to PDF and set size.
+#
+# dependencies:
+#   bc
+#   inkscape
+#   gs
+
+set -e
+
+if [ $# != 3 ]; then
+    exit 1
+fi
+
+inputfile="$1"
+widthInches="$2"
+heightInches="$3"
+
+widthPsPoints=`bc <<< "scale=10; o = 72.0 * $widthInches; scale=0; o / 1"`
+heightPsPoints=`bc <<< "scale=10; o = 72.0 * $heightInches; scale=0; o / 1"`
+outputfile=`dirname $inputfile`/`basename $inputfile .svg`.pdf
+
+tmpfile=`mktemp`
+inkscape $inputfile --export-pdf=$tmpfile
+
+gs \
+ -o $outputfile \
+ -sDEVICE=pdfwrite \
+ -dDEVICEWIDTHPOINTS=$widthPsPoints -dDEVICEHEIGHTPOINTS=$heightPsPoints \
+ -dPDFFitPage \
+ -dFIXEDMEDIA \
+ -dAutoRotatePages=/None \
+ -dCompatibilityLevel=1.4 \
+  $tmpfile
+

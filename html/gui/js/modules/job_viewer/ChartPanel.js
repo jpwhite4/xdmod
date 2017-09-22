@@ -54,8 +54,12 @@ XDMoD.Module.JobViewer.ChartPanel = Ext.extend(Ext.Panel, {
             legend: {
                 enabled: false
             },
+            credits: {
+                text: '',
+                href: ''
+            },
             exporting: {
-                enabled: true,
+                enabled: false,
                 buttons: {
                     contextButton: {
                         menuClassName: 'job-viewer-timeseries-chart-contextmenu',
@@ -221,6 +225,22 @@ XDMoD.Module.JobViewer.ChartPanel = Ext.extend(Ext.Panel, {
             }
         },
 
+        export_option_selected: function (exportParams) {
+
+            var mimeTypes = {
+                png: 'image/png',
+                svg: 'image/svg',
+                csv: 'text/csv',
+                pdf: 'application/pdf'
+            };
+            if (mimeTypes[exportParams.format]) {
+                var settings = Ext.apply({}, exportParams);
+                settings.filetype = mimeTypes[exportParams.format];
+
+                document.location = this.dataurl + '&' + Ext.urlEncode(settings);
+            }
+        },
+
         /**
          *
          * @param panel
@@ -262,8 +282,10 @@ XDMoD.Module.JobViewer.ChartPanel = Ext.extend(Ext.Panel, {
                 chartOptions.series = record.data.series;
                 chartOptions.yAxis.title.text = record.data.schema.units;
                 chartOptions.xAxis.title.text = 'Time (' + record.data.schema.timezone + ')';
+                chartOptions.credits.text = record.data.schema.source + '. Powered by XDMoD/Highcharts';
                 chartOptions.title.text = record.data.schema.description;
                 chartOptions.dataurl = record.store.proxy.url;
+                this.dataurl = record.store.proxy.url;
                 this.displayTimezone = record.data.schema.timezone;
 
                 this.setHighchartTimezone();
