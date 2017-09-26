@@ -313,6 +313,15 @@ class Common
 
             return $result;
         }
+        elseif ($format === 'pdf')
+        {
+            $result = array(
+                "headers" => \DataWarehouse\ExportBuilder::getHeader( $format, false, $filename),
+                "results" => \xd_charting\convertSvgToPdf(\xd_charting\exportHighchart( $returnData['data'][0], $width, $height, $scale, 'svg'), $width / 90.0, $height / 90.0)
+            );
+
+            return $result;
+        }
         elseif($format === 'png_inline')
         {
             $result = array(
