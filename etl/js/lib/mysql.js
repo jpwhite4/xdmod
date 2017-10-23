@@ -99,6 +99,7 @@ var DynamicTable = module.exports.DynamicTable = function(table) {
 			restDims.join(',\n    '), 
 			metrics.join(',\n    '), 
 			'_version INT NOT NULL',
+			'`last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
 			'UNIQUE KEY pk_index (' + this.meta.unique.join(',') + ')',
 			this.extras.join(',\n    '),
 			'PRIMARY KEY (_id)'
@@ -215,6 +216,10 @@ var sqlType = module.exports.sqlType = function(type, length) {
 			break;
 		case "array":
 			throw Error('Type '+ type + ' should not be in a table as a column');				
+        case 'DECIMAL':
+        case 'decimal':
+            return 'DECIMAL(' + length +')';
+            break;
 		default:
 			throw Error('Type '+ type + ' is unknown');
 	}
