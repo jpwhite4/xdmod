@@ -34,7 +34,11 @@ function dynamicSortMultiple() {
          * as long as we have extra properties to compare
          */
         while(result === 0 && i < numberOfProperties) {
-            result = dynamicSort(props[i])(obj1, obj2);
+            if (props[i].order) {
+                result = props[i].order * dynamicSort(props[i].name)(obj1, obj2);
+            } else {
+                result = dynamicSort(props[i])(obj1, obj2);
+            }
             i++;
         }
         return result;
@@ -144,7 +148,7 @@ var DynamicTable = module.exports.DynamicTable = function(table) {
 			ret.push(aggColumn);		
 		}	
 		
-		ret.sort(dynamicSortMultiple("name"));	
+    ret.sort(dynamicSortMultiple({ name: 'dimension', order: -1 }, 'name'));
 		return ret;
 	},
 	this.getErrorInsertStatement = function(replace_, ignore, values, _version) {

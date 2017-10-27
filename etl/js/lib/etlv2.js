@@ -30,59 +30,44 @@ var remapSql = function (sql) {
 module.exports = {
     createETLv2Config: function (profile) {
     },
-    /*
     generateMainConfig: function (profile) {
-
+        /*
         var main = {
-            defaults: {
-                global: {
-                    endpoints: {
-                        source: {
-                            type: "mysql",
-                            name: "SUPReMM DB",
-                            config: "datawarehouse",
-                            schema: "modw_supremm"
-                        },
-                        destination: {
-                            type: "mysql",
-                            name: "SUPReMM DB",
-                            config: "datawarehouse",
-                            schema: "modw_supremm",
-                            create_schema_if_not_exists: true
-                        }
+            "supremm-realm": [
+            {
+                "name": "SupremmJobRecordAggregator",
+                "namespace": "ETL\\Aggregator",
+                "options_class": "AggregatorOptions",
+                "class": "SimpleAggregator",
+                "description": "Aggregate HPC job records",
+                "definition_file": "supremm/supremmfact_hpc_aggregation.json",
+                "enabled": true,
+                "truncate_destination": false,
+                "table_prefix": "supremmfact_by_",
+                "exclude_resource_codes": [],
+                "aggregation_units": ["day", "month", "quarter", "year"],
+                "endpoints": {
+                    "source": {
+                        "type": "mysql",
+                        "name": "SUPReMM DB",
+                        "config": "datawarehouse",
+                        "schema": "modw_supremm"
+                    },
+                    "destination": {
+                        "type": "mysql",
+                        "name": "modw_aggregates",
+                        "config": "datawarehouse",
+                        "schema": "modw_aggregates",
+                        "create_schema_if_not_exists": true
                     }
                 }
             }
+            ]
         };
 
+        return {
+        */
     },
-    "supremm-realm": [
-        {
-            "name": "SupremmJobRecordAggregator",
-            "namespace": "ETL\\Aggregator",
-            "options_class": "AggregatorOptions",
-            "class": "SimpleAggregator",
-            "description": "Aggregate HPC job records",
-            "definition_file": "supremm/supremmfact_hpc_aggregation.json",
-            "enabled": true,
-            "truncate_destination": false,
-            "table_prefix": "supremmfact_by_",
-            "exclude_resource_codes": [],
-            "aggregation_units": ["day", "month", "quarter", "year"],
-            "endpoints": {
-                "destination": {
-                    "type": "mysql",
-                    "name": "modw_aggregates",
-                    "config": "datawarehouse",
-                    "schema": "modw_aggregates",
-                    "create_schema_if_not_exists": true
-                }
-            }
-        }
-    ]
-}
-    },
-    */
     generateAggregates: function (profile) {
         var table;
         var tableColumns;
