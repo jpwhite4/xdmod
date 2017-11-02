@@ -108,9 +108,11 @@ if (isset($_POST['acls'])) {
         $user_to_update->addAcl($acl);
 
         if (count($centers) > 0) {
+            $orgConfig = array();
             foreach ($centers as $center) {
-                $user_to_update->addAclOrganization($aclName, $center);
+                $orgConfig[$center] = array('active' => false, 'primary' => false);
             }
+            $user_to_update->setOrganizations($orgConfig, $aclName);
         }
     }
 } // if (isset($_POST['acls'])) {

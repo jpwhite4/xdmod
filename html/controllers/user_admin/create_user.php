@@ -50,9 +50,11 @@ try {
     // =============================
     foreach($acls as $acl => $centers) {
         if (count($centers) > 0) {
-            foreach($centers as $center) {
-                $newuser->addAclOrganization($acl, $center);
+            $orgConfig = array();
+            foreach ($centers as $center) {
+                $orgConfig[$center] = array('active' => false, 'primary' => false);
             }
+            $newuser->setOrganizations($orgConfig, $aclName);
         }
     }
     // =============================
