@@ -1635,19 +1635,22 @@ SQL
             throw new Exception("This user must be saved prior to calling setOrganization()");
         }
 
+        $acl = Acls::getAclByName($role);
+        if (!isset($acl)) {
+            throw new Exception("Cannot locate an acl for [$role]. Unable to continue setting organizations for user: " . $this->getUsername());
+        }
+
         $role_id = $this->_getRoleID($role);
         if (null === $role_id) {
             throw new Exception("Unable to retrieve id for role: $role");
         }
-        $acl = Acls::getAclByName($role);
-
-        // -------------------------------------------------------
 
         $this->_pdo->execute("DELETE FROM UserRoleParameters " .
             "WHERE user_id=:user_id AND role_id=:role_id AND param_name='provider'", array(
             ':user_id' => $this->_id,
             ':role_id' => $role_id,
         ));
+
         $this->_pdo->execute(
             "DELETE FROM user_acl_group_by_parameters WHERE user_id = :user_id AND acl_id = :acl_id AND group_by_id IN (SELECT gb.group_by_id FROM group_bys gb WHERE gb.name = 'provider')",
             array(
@@ -1655,6 +1658,9 @@ SQL
                 ':acl_id' => $acl->getAclId()
             )
         );
+
+        // -------------------------------------------------------
+
         // =======================================
 
         $active_is_in_set = false;
@@ -1699,8 +1705,10 @@ SQL
                 ':is_primary' => $primary_flag,
                 ':is_active' => $active_flag,
             ));
-            $this->_pdo->execute(
-                <<<SQL
+
+            if (isset($acl)) {
+                $this->_pdo->execute(
+                    <<<SQL
 INSERT INTO user_acl_group_by_parameters (user_id, acl_id, group_by_id, value) 
 SELECT inc.* 
 FROM (
@@ -1719,13 +1727,14 @@ LEFT JOIN user_acl_group_by_parameters cur
   AND cur.value = inc.value
 WHERE cur.user_acl_parameter_id IS NULL;
 SQL
-                ,
-                array(
-                    ':user_id' => $this->_id,
-                    ':acl_id' => $acl->getAclId(),
-                    ':value' => $organization_id
-                )
-            );
+                    ,
+                    array(
+                        ':user_id' => $this->_id,
+                        ':acl_id' => $acl->getAclId(),
+                        ':value' => $organization_id
+                    )
+                );
+            }
         }//foreach
 
         // =======================================
