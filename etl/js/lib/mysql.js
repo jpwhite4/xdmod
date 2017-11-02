@@ -34,7 +34,11 @@ function dynamicSortMultiple() {
          * as long as we have extra properties to compare
          */
         while(result === 0 && i < numberOfProperties) {
-            result = dynamicSort(props[i])(obj1, obj2);
+            if (props[i].order) {
+                result = props[i].order * dynamicSort(props[i].name)(obj1, obj2);
+            } else {
+                result = dynamicSort(props[i])(obj1, obj2);
+            }
             i++;
         }
         return result;
@@ -99,6 +103,7 @@ var DynamicTable = module.exports.DynamicTable = function(table) {
 			restDims.join(',\n    '), 
 			metrics.join(',\n    '), 
 			'_version INT NOT NULL',
+			'`last_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
 			'UNIQUE KEY pk_index (' + this.meta.unique.join(',') + ')',
 			this.extras.join(',\n    '),
 			'PRIMARY KEY (_id)'
@@ -144,7 +149,7 @@ var DynamicTable = module.exports.DynamicTable = function(table) {
 			ret.push(aggColumn);		
 		}	
 		
-		ret.sort(dynamicSortMultiple("name"));	
+    ret.sort(dynamicSortMultiple({ name: 'dimension', order: -1 }, 'name'));
 		return ret;
 	},
 	this.getErrorInsertStatement = function(replace_, ignore, values, _version) {
@@ -215,6 +220,10 @@ var sqlType = module.exports.sqlType = function(type, length) {
 			break;
 		case "array":
 			throw Error('Type '+ type + ' should not be in a table as a column');				
+        case 'DECIMAL':
+        case 'decimal':
+            return 'DECIMAL(' + length +')';
+            break;
 		default:
 			throw Error('Type '+ type + ' is unknown');
 	}

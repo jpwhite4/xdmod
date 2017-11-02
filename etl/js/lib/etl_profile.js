@@ -416,11 +416,15 @@ ETLProfile.prototype.getAggregationTables = function () {
 /*
 * Creates and updates an aggregated table per dynamic tables in the etl profile. 
 */
+var etlv2 = require('./etlv2.js');
+
 ETLProfile.prototype.aggregate = function (recreate) {
     var self = this;
 	var fs = require('fs');
 	try { 
         if (this.output.dbEngine === 'mysqldb') {
+            var aggConf = etlv2.generateAggregates(this);
+            console.log(JSON.stringify(aggConf, null, 4));
             var tables = this.getAggregationTables();
 
 			for (var t in tables) {
