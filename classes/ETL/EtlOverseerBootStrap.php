@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 /**
  * Perform ETL on federated resources.  This is different than the traditional ETL process in that

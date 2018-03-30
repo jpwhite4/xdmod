@@ -13,4 +13,6 @@ restore_exception_handler();
 // Disable PHP's memory limit.
 ini_set('memory_limit', -1);
 
-ETL\EtlOverseerWrapper::execute($argv);
+$retval = ETL\EtlOverseerBootStrap::execute($argv);
+
+exit($retval);
