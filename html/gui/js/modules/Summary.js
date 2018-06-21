@@ -120,7 +120,12 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
         this.portal = new Ext.ux.Portal({
             region: 'center',
             border: false,
-            items: []
+            items: [],
+            listeners: {
+                drop: function(e){
+                    console.log('Portlet Dropped', e.panel.title, e.columnIndex, e.position);
+                }
+            }
         });
 
         this.portalPanel = new Ext.Panel({
@@ -147,7 +152,7 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
             region: 'center',
             title: '<h3>Summary</h3>',
 
-            tbar: quickFilterToolbar,
+        //    tbar: quickFilterToolbar,
             items: [this.portalPanel]
         });
 
@@ -401,6 +406,7 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
 
         this.portal.doLayout();
         this.toolbar.doLayout();
+        this.toolbar.hide();
 
         var viewer = CCR.xdmod.ui.Viewer.getViewer();
 
@@ -482,7 +488,7 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
 
         this.portal.removeAll(true);
 
-        var portletAspect = 11.0 / 17.0;
+        var portletAspect = 11.0 / 19.0;
         var portletWidth = 580;
         var portletPadding = 25;
         var portalWidth = this.portal.getWidth();
@@ -503,6 +509,147 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
             this.portal.add(portalColumn);
         } // for
 
+        var formatJobInfo = function (value, p, record) {
+
+
+    var getDataColor = function(data) {
+        var color = 'gray';
+        var steps = [
+            {
+                value: .25,
+                color: '#FF0000'
+            },
+            {
+                value: .50,
+                color: '#FFB336'
+            },
+            {
+                value: .75,
+                color: '#DDDF00'
+            },
+            {
+                value: 1,
+                color: '#50B432'
+            }
+        ];
+
+        var i, step;
+        for (i = 0; i < steps.length; i++) {
+            step = steps[i];
+            if (data <= step.value) {
+                color = step.color;
+                break;
+            }
+        }
+        return color;
+    };
+
+
+            return String.format(
+                '<div class="topic"><b>{0}</b><br /><span class="author">Started: {1} Ended: {2}. CPU Usage {3}%<div class="circle" style="background-color: {4}"></div></span></div>',
+                value, 
+                moment(1000 * record.data.start_time_ts).format('Y-MM-DD HH:mm:ss z'),
+                moment(1000 * record.data.end_time_ts).format('Y-MM-DD HH:mm:ss z'),
+                (record.data.cpu_user * 100.0).toFixed(1),
+                getDataColor(record.data.cpu_user)
+            );
+        };
+
+        var formatDateWithTimezone = function (value, p, record) {
+            return moment(value * 1000).format('Y-MM-DD HH:mm:ss z');
+        };
+
+            var jobportlet = new Ext.ux.Portlet({
+                layout: 'border',
+                width: portletWidth,
+                height: 2 * portletWidth * portletAspect,
+                title: 'Recent Jobs for ' + CCR.xdmod.ui.fullName,
+                items: [ new Ext.grid.GridPanel({
+                    region: 'center',
+                    store: new Ext.data.JsonStore({
+                        id: 'summary_jobs',
+                        proxy: new Ext.data.HttpProxy({
+                            api: {
+                                read: {
+                                    method: 'GET',
+                        url   : XDMoD.REST.url + '/warehouse/search/jobs'
+                                }
+                            }
+                        }),
+                        root: 'results',
+                        autoLoad: true,
+                        totalProperty: 'totalCount',
+                        baseParams: {
+                            start_date: '2018-02-01',
+                            end_date: '2018-06-20',
+                            realm: 'SUPREMM',
+                            limit: 20,
+                            start: 0,
+                            verbose: true,
+                            params: JSON.stringify({
+                                person: [
+                                    CCR.xdmod.ui.mappedPID
+                                ]
+                            })
+                        },
+            fields: [
+                {name: 'dtype', mapping: 'dtype', type: 'string'},
+                {name: 'resource', mapping: 'resource', type: 'string'},
+                {name: 'name', mapping: 'name', type: 'string'},
+                {name: 'jobid', mapping: 'jobid', type: 'int'},
+                {name: 'local_job_id', mapping: 'local_job_id', type: 'int'},
+                {name: 'text', mapping: 'text', type: 'string'},
+                'cpu_user',
+                'start_time_ts',
+                'end_time_ts'
+            ]
+    }),
+    colModel: new Ext.grid.ColumnModel({
+        defaults: {
+            sortable: true
+        },
+        columns: [
+            {   
+                header: 'Job',
+                renderer: formatJobInfo,
+                width: 250, 
+                sortable: true,
+                dataIndex: 'text'
+            },
+            {   
+                header: 'End Time',
+                renderer: formatDateWithTimezone,
+                width: 70, 
+                sortable: true,
+                dataIndex: 'end_time_ts'
+            },
+        ]
+    }),
+    viewConfig: {
+        forceFit: true
+    },
+    sm: new Ext.grid.RowSelectionModel({singleSelect:true}),
+    listeners: {
+        rowclick: function (panel, rowIndex) {
+            var store = panel.getStore();
+            var info = store.getAt(rowIndex);
+
+            var params = {
+                action: 'show',
+                realm: store.baseParams.realm,
+                jobref: info.data[info.data.dtype]
+            };
+            console.log(params, Ext.urlEncode(params));
+            Ext.History.add('job_viewer?' + Ext.urlEncode(params));
+        }
+    }
+        }) ]
+    });
+        
+if (CCR.xdmod.ui.fullName) {
+        portalColumns[0].add(jobportlet);
+}
+
         var charts = Ext.util.JSON.decode(store.getAt(0).get('charts'));
 
         var getTrackingConfig = function (panel_ref) {
@@ -515,7 +662,7 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
             };
         }; // getTrackingConfig
 
-        for (var i = 0; i < charts.length; i++) {
+        for (var i = 0; i < Math.min(2, charts.length); i++) {
             var config = charts[i];
 
             config = Ext.util.JSON.decode(config);
@@ -738,7 +885,13 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
 
             portlet.add(hcp);
 
-            portalColumns[i % portalColumnsCount].add(portlet);
+            if(portalColumnsCount > 1) {
+                portalColumns[1].add(portlet);
+            } else {
+                portalColumns[0].add(portlet);
+            }
+
+            //portalColumns[i % portalColumnsCount].add(portlet);
         } // for (var i = 0; i < charts.length; i++)
     } // reloadPortlets
 
