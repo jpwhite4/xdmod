@@ -52,8 +52,9 @@
         coverjs [SRC FILE] -o lib-cov
   -->
   <script>
-Ext.ns('CCR', 'CCR.xdmod', 'CCR.xdmod.ui', 'XDMoD.REST');
+Ext.ns('CCR', 'CCR.xdmod', 'CCR.xdmod.ui', 'XDMoD.REST', 'XDMoD.Module');
   </script>
+  <script data-cover src="lib-cov/Summary.js"></script>
   <script data-cover src="lib-cov/ChangeStack.js"></script>
   <script data-cover src="lib-cov/CCR.js"></script>
 
@@ -73,6 +74,7 @@ Ext.ns('CCR', 'CCR.xdmod', 'CCR.xdmod.ui', 'XDMoD.REST');
   <script type="text/javascript" src="../gui/js/modules/job_viewer/NestedViewPanel.js"></script>
 
   <!-- Test specification files -->
+  <script src="spec/LayoutSpec.js"></script>
   <script src="spec/ChangeStackSpec.js"></script>
   <script src="spec/CCRTokenizeSpec.js"></script>
   <script src="spec/JobViewerSpec.js"></script>

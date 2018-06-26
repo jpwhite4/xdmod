@@ -16,6 +16,76 @@ XDMoD.Module.Summary = function (config) {
 
 // ===========================================================================
 
+XDMoD.portalLayout = function (config) {
+
+    this.layout = [];
+    this.managedCharts = 0;
+    this.nextColumn = 0;
+
+    this.get = function (totalCharts) {
+        var nextRow;
+
+        while (totalCharts > this.managedCharts) {
+            nextRow = this.layout[this.nextColumn].length;
+            this.add(this.managedCharts, nextRow, this.nextColumn);
+        }
+
+        while (totalCharts < this.managedCharts) {
+            this.remove(this.managedCharts - 1);
+        }
+
+        return this.layout;
+    };
+
+    this.add = function (chartId, row, column) {
+        this.layout[column].splice(row, 0, chartId);
+        this.managedCharts++;
+        this.nextColumn = (this.nextColumn + 1) % this.layout.length;
+    };
+    
+    this.remove = function (chartId) {
+        var origIndex;
+
+        for (i = 0; i < this.layout.length; i++) {
+            origIndex = this.layout[i].indexOf(chartId);
+            if (origIndex > -1) {
+                this.layout[i].splice(origIndex, 1);
+                this.managedCharts--;
+                // Need to compute the remainder twice to compute the positive modulo
+                this.nextColumn = (((this.nextColumn - 1) % this.layout.length) + this.layout.length) % this.layout.length;
+                return;
+            }
+        }
+    };
+
+    this.move = function (chartId, row, column) {
+        this.remove(chartId);
+        this.add(chartId, row, column);
+
+        return this.layout;
+    };
+
+    var i, j;
+    var nColumns;
+
+    if (typeof config === 'number') {
+        nColumns = config;
+        for (i = 0; i < nColumns; i++) {
+            this.layout[i] = [];
+        }
+    } else if (Array.isArray(config)) {
+        nColumns = config.length;
+        for (i = 0; i < nColumns; i++) {
+            this.layout[i] = [];
+            for (j = 0; j < config[i].length; j++) {
+                this.add(config[i][j], j, i);
+            }
+        }
+    } else {
+        throw new RangeError('The argument must be either an array or a number of columns');
+    }
+};
+
 Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
 
     module_id: 'summary',
@@ -50,6 +120,20 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
         });
 
         self.on('activate', self.checkForUpdates);
+
+        this.layoutStore = new Ext.data.JsonStore({
+            proxy: new Ext.data.HttpProxy({
+                url: XDMoD.REST.url + '/summary/layout'
+            }),
+            writer: new Ext.data.JsonWriter(),
+            autoDestroy: true,
+            autoSave: true,
+            restful: true,
+            root: 'data',
+            idProperty: 'recordid',
+            fields: [ 'recordid', 'layout' ]
+        });
+
 
     // ----------------------------------------
 
@@ -120,7 +204,23 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
         this.portal = new Ext.ux.Portal({
             region: 'center',
             border: false,
-            items: []
+            items: [],
+            listeners: {
+                drop: function(e){
+                    var layout = self.layoutObj.move(e.panel.index, e.position, e.columnIndex);
+
+                    var layoutRecord = self.layoutStore.getById(layout.length);
+                    if (!layoutRecord) {
+                        layoutRecord = new self.layoutStore.recordType({
+                            layout: layout,
+                            recordid: layout.length
+                        });
+                        self.layoutStore.add(layoutRecord);
+                    } else {
+                        layoutRecord.set('layout', layout);
+                    }
+                }
+            }
         });
 
         this.portalPanel = new Ext.Panel({
@@ -470,7 +570,12 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
 
         this.summaryStore.loadStartTime = new Date().getTime();
         this.summaryStore.removeAll(true);
-        this.summaryStore.load();
+        this.layoutStore.load({
+            callback: function () {
+                this.summaryStore.load();
+            },
+            scope: this
+        });
     }, // reload
 
   // ------------------------------------------------------------------
@@ -514,6 +619,8 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
                 timeframe_label: panel_ref.config.timeframe_label
             };
         }; // getTrackingConfig
+
+        var chartPortlets = [];
 
         for (var i = 0; i < charts.length; i++) {
             var config = charts[i];
@@ -737,9 +844,27 @@ Ext.extend(XDMoD.Module.Summary, XDMoD.PortalModule, {
             }); // hcp
 
             portlet.add(hcp);
+            chartPortlets.push(portlet);
+        }
 
-            portalColumns[i % portalColumnsCount].add(portlet);
-        } // for (var i = 0; i < charts.length; i++)
+        var layoutRecord = this.layoutStore.getById(portalColumnsCount);
+
+        if (layoutRecord) {
+            this.layoutObj = new XDMoD.portalLayout(layoutRecord.get('layout'));
+        } else {
+            this.layoutObj = new XDMoD.portalLayout(portalColumnsCount);
+        }
+
+        var layout = this.layoutObj.get(chartPortlets.length);
+
+        var column;
+        var row;
+        for (column = 0; column < layout.length; column++) {
+            for (row = 0; row < layout[column].length; row++) {
+                portalColumns[column].add(chartPortlets[layout[column][row]]);
+            }
+        }
+
     } // reloadPortlets
 
 }); // XDMoD.Module.Summary
