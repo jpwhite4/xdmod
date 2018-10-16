@@ -156,7 +156,43 @@
             }
         }
     ],
-    "aggregate": [{
+    "aggregate": [
+        {
+            "name": "table-create",
+            "description": "Setup tables",
+            "class": "ManageTables",
+            "namespace": "ETL\\Maintenance",
+            "options_class": "MaintenanceOptions",
+            "definition_file_list": [
+                 "jobs/xdw/jobfact_by_day_joblist.json"
+            ]
+        },
+        {
+            "name": "aggregate-days",
+            "endpoints": {
+                "source": {
+                    "type": "mysql",
+                    "name": "Job Record/Task database",
+                    "config": "datawarehouse",
+                    "schema": "modw"
+                },
+                "destination": {
+                    "type": "mysql",
+                    "name": "Aggregates Database",
+                    "config": "datawarehouse",
+                    "schema": "modw_aggregates",
+                    "create_schema_if_not_exists": true
+                }
+            },
+            "namespace": "ETL\\Aggregator",
+            "options_class": "AggregatorOptions",
+            "class": "JobListAggregator",
+            "description": "Aggregate HPC job records",
+            "definition_file": "jobs/hpc-aggregation.json",
+            "table_prefix": "jobfact_by_",
+            "aggregation_units": ["day"]
+        },
+        {
         "name": "aggregate",
         "endpoints": {
             "source": {
@@ -180,7 +216,7 @@
         "definition_file": "jobs/hpc-aggregation.json",
         "table_prefix": "jobfact_by_",
         "aggregation_units": [
-            "day", "month", "quarter", "year"
+            "month", "quarter", "year"
         ]
     }]
 }
