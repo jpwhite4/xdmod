@@ -13,6 +13,11 @@ cp -r $REF_SOURCE /var/tmp/
 set -e
 set -o pipefail
 
+if ! grep -q group_concat_max_len /etc/my.cnf.d/server.cnf;
+then
+    sed -i 's/^\[mysqld\]$/[mysqld]\n\ngroup_concat_max_len = 16777216/' /etc/my.cnf.d/server.cnf
+fi
+
 if [ "$XDMOD_TEST_MODE" = "fresh_install" ];
 then
     rpm -qa | grep ^xdmod | xargs yum -y remove
