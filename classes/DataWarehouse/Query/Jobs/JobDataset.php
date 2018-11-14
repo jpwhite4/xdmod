@@ -11,7 +11,7 @@ use \DataWarehouse\Query\Model\Schema;
 * @date 2015-03-25
 *
 */
-class JobDataset extends \DataWarehouse\Query\RawQuery
+class JobDataset extends \DataWarehouse\Query\Jobs\RawData
 {
     private $documentation = array();
 
@@ -20,18 +20,34 @@ class JobDataset extends \DataWarehouse\Query\RawQuery
         $stat = "all"
     ) {
 
-        parent::__construct('Jobs', 'modw', 'job_tasks', $parameters);
+        parent::__construct('Jobs', 'modw_aggregates', 'jobfact_by_day', $parameters);
 
         $config = \Xdmod\Config::factory();
 
         $dataTable = $this->getDataTable();
+        $joblistTable = new Table($dataTable->getSchema(), $dataTable->getName() . "_joblist", "jl");
+        $factTable = new Table(new Schema('modw'), 'job_tasks', 'jt');
+
+        $this->addTable($joblistTable );
+        $this->addTable($factTable );
+
+        $this->addWhereCondition(new WhereCondition(
+            new TableField($joblistTable, "agg_id"),
+            "=",
+            new TableField($dataTable, "id")
+        ));
+        $this->addWhereCondition(new WhereCondition(
+            new TableField($joblistTable, "jobid"),
+            "=",
+            new TableField($factTable, "job_id")
+        ));
 
         if ($stat == "accounting") {
             $i = 0;
             foreach ($config['rawstatistics']['modw.job_tasks'] as $sdata) {
                 $sfield = $sdata['key'];
                 if ($sdata['dtype'] == 'accounting') {
-                    $this->addField(new TableField($dataTable, $sfield));
+                    $this->addField(new TableField($factTable, $sfield));
                     $this->documentation[$sfield] = $sdata;
                 } elseif ($sdata['dtype'] == 'foreignkey') {
                     if (isset($sdata['join'])) {
@@ -39,7 +55,7 @@ class JobDataset extends \DataWarehouse\Query\RawQuery
                         $i += 1;
                         $tmptable = new Table(new Schema($info['schema']), $info['table'], "ft$i");
                         $this->addTable($tmptable);
-                        $this->addWhereCondition(new WhereCondition(new TableField($dataTable, $sfield), '=', new TableField($tmptable, "id")));
+                        $this->addWhereCondition(new WhereCondition(new TableField($factTable, $sfield), '=', new TableField($tmptable, "id")));
                         $fcol = isset($info['column']) ? $info['column'] : 'name';
                         $this->addField(new TableField($tmptable, $fcol, $sdata['name']));
 
@@ -49,7 +65,7 @@ class JobDataset extends \DataWarehouse\Query\RawQuery
             }
             $rf = new Table(new Schema('modw'), 'resourcefact', 'rf');
             $this->addTable($rf);
-            $this->addWhereCondition(new WhereCondition(new TableField($dataTable, 'resource_id'), '=', new TableField($rf, 'id')));
+            $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'resource_id'), '=', new TableField($rf, 'id')));
             $this->addField(new TableField($rf, 'timezone'));
             $this->documentation['timezone'] = array(
                 "name" => "Timezone",
@@ -60,8 +76,8 @@ class JobDataset extends \DataWarehouse\Query\RawQuery
         }
         else
         {
-            $this->addField(new TableField($dataTable, "job_id", "jobid"));
-            $this->addField(new TableField($dataTable, "local_jobid", "local_job_id"));
+            $this->addField(new TableField($factTable, "job_id", "jobid"));
+            $this->addField(new TableField($factTable, "local_jobid", "local_job_id"));
 
             $rt = new Table(new Schema("modw"), "resourcefact", "rf");
             $this->joinTo($rt, "resource_id", "code", "resource");
