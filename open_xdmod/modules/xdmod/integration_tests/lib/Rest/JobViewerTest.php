@@ -8,40 +8,25 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $xdmodConfig = array( "decodetextasjson" => true );
+        $xdmodConfig = array( 'decodetextasjson' => true );
         $this->xdmodhelper = new \TestHarness\XdmodTestHelper($xdmodConfig);
     }
 
     private static function getDimensions() {
         return array(
-            "application",
-            "catastrophe_bucket_id",
-            "cpi",
-            "cpucv",
-            "cpuuser",
-            "datasource",
-            "nsfdirectorate",
-            "parentscience",
-            "exit_status",
-            "netdrv_gpfs_rx_bucket_id",
-            "granted_pe",
-            "ibrxbyterate_bucket_id",
-            "netdrv_isilon_rx_bucket_id",
-            "jobsize",
-            "jobwalltime",
-            "nodecount",
-            "netdrv_panasas_rx_bucket_id",
-            "max_mem",
-            "pi",
-            "fieldofscience",
-            "pi_institution",
-            "queue",
-            "resource",
-            "provider",
-            "shared",
-            "username",
-            "person",
-            "institution"
+            'nsfdirectorate',
+            'parentscience',
+            'jobsize',
+            'jobwaittime',
+            'jobwalltime',
+            'nodecount',
+            'pi',
+            'fieldofscience',
+            'queue',
+            'resource',
+            'resource_type',
+            'username',
+            'person'
         );
     }
 
@@ -53,7 +38,7 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
      */
     public function testDimensions()
     {
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
         $queryparams = array(
             'realm' => 'Jobs'
         );
@@ -79,7 +64,7 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
     public function dimensionsProvider()
     {
         $xdmodhelper = new \TestHarness\XdmodTestHelper(array('decodetextasjson' => true));
-        $xdmodhelper->authenticate("cd");
+        $xdmodhelper->authenticate('cd');
 
         $testCases = array();
         foreach (self::getDimensions() as $dimension) {
@@ -111,7 +96,7 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
 
     public function testResourceEndPoint()
     {
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
 
         $queryparams = array(
             'realm' => 'Jobs'
@@ -150,7 +135,7 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
     private function validateSingleJobSearch($searchparams, $doAuth = true)
     {
         if ($doAuth) {
-            $this->xdmodhelper->authenticate("cd");
+            $this->xdmodhelper->authenticate('cd');
         }
         $result = $this->xdmodhelper->get(self::ENDPOINT . 'search/jobs', $searchparams);
 
@@ -207,7 +192,7 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
 
     public function testInvalidJobSearch() {
 
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
         $result = $this->xdmodhelper->get(self::ENDPOINT . 'search/jobs', array() );
 
         $this->assertArrayHasKey('success', $result[0]);
@@ -220,11 +205,11 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
     public function testInvalidJobSearchJson() {
 
         $searchparams = array(
-            "realm" => "Jobs",
-            "params" => "this is not json data"
+            'realm' => 'Jobs',
+            'params' => 'this is not json data'
         );
 
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
         $result = $this->xdmodhelper->get(self::ENDPOINT . 'search/jobs', $searchparams);
 
         $this->assertArrayHasKey('success', $result[0]);
@@ -237,11 +222,11 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
     public function testInvalidJobSearchMissingParams() {
  
         $searchparams = array(
-            "realm" => "Jobs",
-            "params" => json_encode(array("resource_id" => "2801"))
+            'realm' => 'Jobs',
+            'params' => json_encode(array('resource_id' => '2801'))
         );
 
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
         $result = $this->xdmodhelper->get(self::ENDPOINT . 'search/jobs', $searchparams);
 
         $this->assertArrayHasKey('success', $result[0]);
@@ -253,18 +238,18 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
 
     public function testAdvancedSearchInvalid() {
         $searchparams = array(
-            "start_date" => "2015-01-01",
-            "end_date" => "2015-01-01",
-            "realm" => "Jobs",
-            "params" => json_encode(
-                array( "non existent dimension 1" => array(0),
-                "another invalid dimension" => array(1) )
+            'start_date' => '2015-01-01',
+            'end_date' => '2015-01-01',
+            'realm' => 'Jobs',
+            'params' => json_encode(
+                array( 'non existent dimension 1' => array(0),
+                'another invalid dimension' => array(1) )
             ),
-            "limit" => 10,
-            "start" => 0
+            'limit' => 10,
+            'start' => 0
         );
 
-        $this->xdmodhelper->authenticate("cd");
+        $this->xdmodhelper->authenticate('cd');
         $result = $this->xdmodhelper->get(self::ENDPOINT . 'search/jobs', $searchparams);
         $this->assertEquals($result[0]['success'], false);
         $this->assertEquals($result[1]['http_code'], 400);
@@ -302,67 +287,9 @@ class JobViewerTest extends \PHPUnit_Framework_TestCase
         }
         
         $expectedTypes = array(
-            'Accounting data',
-            'Executable information',
-            'Summary metrics',
-            'Detailed metrics',
-            'Job analytics',
-            'Timeseries'
+            'Accounting data'
         );
 
         $this->assertEquals($expectedTypes, $types);
-    }
-
-    /**
-     * @dataProvider jobTimeseriesProvider
-     */
-    public function testJobTimeseries($xdmodhelper, $params, $expectedContentType, $expectedFinfo) {
-        $response = $xdmodhelper->get(self::ENDPOINT . 'search/jobs/timeseries', $params);
-
-        $this->assertEquals(200, $response[1]['http_code']);
-        $this->assertEquals($expectedContentType, $response[1]['content_type']);
-
-        if ($expectedFinfo !== null) {
-            // Check the mime type of the file is correct.
-            $finfo = finfo_open(FILEINFO_MIME);
-            $this->assertEquals($expectedFinfo, finfo_buffer($finfo, $response[0]));
-        }
-    }
-
-    public function jobTimeseriesProvider() {
-        $xdmodhelper = new \TestHarness\XdmodTestHelper();
-        $xdmodhelper->authenticate('cd');
-
-        $queryparams = array(
-            'realm' => 'Jobs',
-            'params' => json_encode(
-                array(
-                    'resource_id' => 5,
-                    'local_job_id' => 6112282
-                )
-            )
-        );
-        $result = $xdmodhelper->get(self::ENDPOINT . 'search/jobs', $queryparams);
-        $jobparams = $result[0]['results'][0];
-
-        $searchparams = array(
-            'realm' => 'Jobs',
-            $jobparams['dtype'] => $jobparams[$jobparams['dtype']],
-            'infoid' => 6,
-            'tsid' =>  'cpuuser'
-        );
-
-        $ret = array();
-        $ret[] = array($xdmodhelper, $searchparams, 'application/json', null);
-        $searchparams['format'] = 'pdf';
-        $ret[] = array($xdmodhelper, $searchparams, 'application/pdf', 'application/pdf; charset=binary');
-        $searchparams['format'] = 'csv';
-        $ret[] = array($xdmodhelper, $searchparams, 'text/csv', 'text/plain; charset=us-ascii');
-        $searchparams['format'] = 'png';
-        $ret[] = array($xdmodhelper, $searchparams, 'image/png', 'image/png; charset=binary');
-        $searchparams['format'] = 'svg';
-        $ret[] = array($xdmodhelper, $searchparams, 'image/svg+xml', 'text/plain; charset=us-ascii');
-
-        return $ret;
     }
 }
