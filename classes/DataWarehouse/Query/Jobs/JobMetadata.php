@@ -16,6 +16,36 @@ class JobMetadata
         );
     }
 
+    public function getJobSummary($user, $jobid)
+    {
+        return array();
+    }
+
+    public function getJobExecutableInfo($user, $jobid)
+    {
+        return array();
+    }
+
+    public function getJobTimeseriesMetaData($user, $jobid)
+    {
+        return array();
+    }
+
+    public function getJobTimeseriesMetricMeta($user, $jobid, $metric)
+    {
+        return array();
+    }
+
+    public function getJobTimeseriesMetricNodeMeta($user, $jobid, $metric, $nodeid)
+    {
+        return array();
+    }
+
+    public function getJobTimeseriesData($user, $jobid, $tsid, $nodeid, $cpuid)
+    {
+        return array();
+    }
+
     /*
      * Get the local_job_id, end_time, etc for the given job entry in the
      * database. This information is used to lookup the job summary/timeseries
