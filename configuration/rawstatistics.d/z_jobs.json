@@ -1,9 +1,7 @@
 {
     "+realms": {
         "Jobs": {
-            "name": "Jobs",
-            "primary_key": "job_id",
-            "ident_key": "local_jobid"
+            "name": "Jobs"
         }
     },
     "modw.job_tasks": [
