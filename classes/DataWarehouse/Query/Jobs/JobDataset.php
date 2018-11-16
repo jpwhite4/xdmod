@@ -3,6 +3,7 @@ namespace DataWarehouse\Query\Jobs;
 
 use \DataWarehouse\Query\Model\Table;
 use \DataWarehouse\Query\Model\TableField;
+use \DataWarehouse\Query\Model\FormulaField;
 use \DataWarehouse\Query\Model\WhereCondition;
 use \DataWarehouse\Query\Model\Schema;
 
@@ -11,7 +12,7 @@ use \DataWarehouse\Query\Model\Schema;
 * @date 2015-03-25
 *
 */
-class JobDataset extends \DataWarehouse\Query\Jobs\RawData
+class JobDataset extends \DataWarehouse\Query\RawQuery
 {
     private $documentation = array();
 
@@ -20,7 +21,7 @@ class JobDataset extends \DataWarehouse\Query\Jobs\RawData
         $stat = "all"
     ) {
 
-        parent::__construct('Jobs', 'modw_aggregates', 'jobfact_by_day', $parameters);
+        parent::__construct('Jobs', 'modw_aggregates', 'jobfact_by_day', array());
 
         $config = \Xdmod\Config::factory();
 
@@ -41,6 +42,29 @@ class JobDataset extends \DataWarehouse\Query\Jobs\RawData
             "=",
             new TableField($factTable, "job_id")
         ));
+
+        if (isset($parameters['primary_key'])) {
+            $pdostr = $this->nextPdoIndex($parameters['primary_key']);
+            $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'job_id'), "=", $pdostr));
+        } else {
+            $matches = array();
+            if (preg_match('/^(\d+)(?:[\[_](\d+)\]?)?$/', $parameters['job_identifier'], $matches)) {
+                $pdostr = $this->nextPdoIndex($parameters['resource_id']);
+                $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'resource_id'), '=', $pdostr));
+                if (isset($matches[2])) {
+                    $pdostr = $this->nextPdoIndex($matches[1]);
+                    $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'local_jobid'), '=', $pdostr));
+
+                    $pdostr = $this->nextPdoIndex($matches[2]);
+                    $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'local_job_array_index'), '=', $pdostr));
+                } else {
+                    $pdostr = $this->nextPdoIndex($matches[1]);
+                    $this->addWhereCondition(new WhereCondition(new TableField($factTable, 'local_job_id_raw'), '=', $pdostr));
+                }
+            } else {
+                throw new \Exception('invalid query parameters');
+            }
+        }
 
         if ($stat == "accounting") {
             $i = 0;
@@ -80,7 +104,7 @@ class JobDataset extends \DataWarehouse\Query\Jobs\RawData
             $this->addField(new TableField($factTable, "local_jobid", "local_job_id"));
 
             $rt = new Table(new Schema("modw"), "resourcefact", "rf");
-            $this->joinTo($rt, "resource_id", "code", "resource");
+            $this->joinTo($rt, "task_resource_id", "code", "resource");
 
             $pt = new Table(new Schema('modw'), 'person', 'p');
             $this->joinTo($pt, "person_id", "long_name", "name");

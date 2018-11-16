@@ -53,9 +53,7 @@ class JobMetadata
      */
     private function lookupJob($user, $jobid)
     {
-        $params = array(new \DataWarehouse\Query\Model\Parameter("job_id", "=", $jobid));
-
-        $query = new \DataWarehouse\Query\Jobs\JobDataset($params);
+        $query = new \DataWarehouse\Query\Jobs\JobDataset(array('primary_key' => $jobid));
         $query->setMultipleRoleParameters($user->getAllRoles(), $user);
         $stmt = $query->getRawStatement();
 
