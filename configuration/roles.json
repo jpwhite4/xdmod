@@ -377,6 +377,13 @@
             "dimensions": [
                 "provider"
             ],
+            "summary_portlets": [
+            {
+                "name": "Thumbnail Charts",
+                "type": "ChartThumbnailPortlet",
+                "region": "top",
+                "config": {}
+            }],
             "extends": "default"
         },
         "pi": {

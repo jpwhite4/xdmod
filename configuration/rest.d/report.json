@@ -1,0 +1,7 @@
+{
+  "report": {
+    "prefix": "report",
+    "controller": "Rest\\Controllers\\ReportControllerProvider"
+  }
+}
+
