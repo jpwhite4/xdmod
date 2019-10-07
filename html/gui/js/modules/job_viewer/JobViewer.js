@@ -23,28 +23,6 @@
    }
 ] */
 
-// TODO: Move this someplace else, just here for testing...
-if (!String.prototype.trim) {
-    String.prototype.trim = function () {
-        return this.replace(/^\s+|\s+$/g, '');
-    };
-}
-
-var exceptionhandler = function (proxy, type, action, exception, response) {
-    switch (response.status) {
-        case 403:
-        case 500:
-            var details = Ext.decode(response.responseText);
-            Ext.Msg.alert("Error " + response.status + " " + response.statusText, details.message);
-            break;
-        case 401:
-            // Do nothing
-            break;
-        default:
-            Ext.Msg.alert(response.status + ' ' + response.statusText, response.responseText);
-    }
-};
-
 /*
  * JobViewer panel
  * @author Joe White
@@ -424,25 +402,6 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
     noOpt: function () {
         /** NO-OPT, what did you expect? **/
     }, // noOpt
-
-    /**
-     * Helper function that retrieves the requested parameter from the provided
-     * source string via the provided name.
-     *
-     * @param name that will be used when looking for the the parameter in
-     *             source.
-     * @param source that will be used to search for parameter 'name'.
-     * @returns {String} an empty string if not found, else the value of the
-     *                   parameter.
-     */
-    getParameterByName: function (name, source) {
-        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-                results = regex.exec(source);
-        return results === null
-                ? ""
-                : decodeURIComponent(results[1].replace(/\+/g, " "));
-    }, // getParameterByName
 
     /**
      * Generate a URL based on the provided base path. This URL will include
@@ -1707,29 +1666,6 @@ XDMoD.Module.JobViewer = Ext.extend(XDMoD.PortalModule, {
             }
         }
     }, // _processViewRequest
-
-    /**
-     * Replace the property found in the paths' array of objects
-     * with the provided value if found.
-     *
-     * @param {String} property
-     * @param {*} value
-     * @param {Array} path
-     * @private
-     */
-    _replace: function (property, value, path) {
-        var isType = CCR.isType;
-        if (!isType(path, CCR.Types.Array)) return;
-        for (var i = 0; i < path.length; i++) {
-            var entry = path[i];
-            if (entry.dtype === property) {
-                entry.value = value;
-                return;
-            }
-        }
-        return;
-    }, // _replace
-
 
     /**
      * Retrieve the value at the index provided from 'data'. This is done in a

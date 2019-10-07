@@ -1843,14 +1843,6 @@ CCR.merge = function (obj1, obj2) {
     }
     return obj3;
 };
-CCR.getParameter = function (name, source) {
-    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
-    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-            results = regex.exec(source);
-    return results === null
-            ? ""
-            : decodeURIComponent(results[1].replace(/\+/g, " "));
-};
 /*
  * Process the location hash string. The string should have the form:
  *  PATH?PARAMS
