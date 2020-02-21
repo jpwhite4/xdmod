@@ -21,7 +21,7 @@ class Query
 {
     public $roleParameterDescriptions;
     public $filterParameterDescriptions;
-    private $pdoparams;
+    public $pdoparams;
     private $pdoindex;
     private $log;
 
