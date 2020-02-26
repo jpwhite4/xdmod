@@ -44,6 +44,92 @@ class Timeseries extends \DataWarehouse\Query\Query
         $this->addGroupBy($this->_aggregation_unit->getUnitName());
     }
 
+    /**
+     * returns the equivalent aggregate query instance that has
+     * identical statistics, groupbys and where conditions.
+     */
+    public function getAggregateQuery()
+    {
+        $query_classname = '\\DataWarehouse\\Query\\' . $this->getRealmName() . '\\Aggregate';
+
+        $agg_query = new $query_classname(
+            $this->_aggregation_unit->getUnitName(),
+            $this->_start_date,
+            $this->_end_date,
+            null,
+            null,
+            array()
+        );
+
+        foreach ($this->_group_bys as $groupBy) {
+            if ($groupBy->getName() === $this->_aggregation_unit->getUnitName()) {
+                // skip the time-based groupby
+                continue;
+            }
+            $agg_query->addGroupBy($groupBy->getName());
+        }
+
+        foreach ($this->_stats as $stat_name => $stat) {
+            $agg_query->addStat($stat_name);
+        }
+
+        if (isset($this->sortInfo)) {
+            foreach ($this->sortInfo as $sort) {
+                $agg_query->addOrderBy($sort['column_name'], $sort['direction']);
+            }
+        }
+
+        $agg_query->cloneParameters($this);
+
+        return $agg_query;
+    }
+
+    /**
+     * This call does not change the sort order of the timeseries query
+     * itself, rather it is used to change the sort order of the associated
+     * aggregrate query that is returned by the getAggregateQuery() function.
+     */
+    public function addOrderByAndSetSortInfo($data_description)
+    {
+        switch ($data_description->sort_type) {
+            case 'value_asc':
+                $this->sortInfo = array(
+                array(
+                    'column_name' => $data_description->metric,
+                    'direction' => 'asc'
+                )
+                );
+                break;
+
+            case 'value_desc':
+                $this->sortInfo = array(
+                array(
+                    'column_name' => $data_description->metric,
+                    'direction' => 'desc'
+                )
+                );
+                break;
+
+            case 'label_asc':
+                $this->sortInfo = array(
+                array(
+                    'column_name' => $data_description->group_by,
+                    'direction' => 'asc'
+                )
+                );
+                break;
+
+            case 'label_desc':
+                $this->sortInfo = array(
+                array(
+                    'column_name' => $data_description->group_by,
+                    'direction' => 'desc'
+                )
+                );
+                break;
+        }
+    }
+
     protected function setDuration(
         $start_date,
         $end_date,
