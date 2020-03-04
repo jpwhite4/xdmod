@@ -14,6 +14,13 @@ use \DataWarehouse\Query\Model\OrderBy;
 
 class TimeseriesDataset
 {
+    // The summarized dataseries is assigned a dedicated group id value. This
+    // is used by the frontend code in the Usage Tab to not generate a
+    // drilldown tooltip @refer html/gui/js/DrillDownMenu.js The visualization
+    // class also checks this to set the remainder flag on the dataset for hte
+    // metric explorer.
+    public const SUMMARY_GROUP_ID = -99999;
+
     protected $query;
     protected $agg_query;
 
@@ -49,13 +56,14 @@ class TimeseriesDataset
     }
 
     /**
-     *
+     * Get the time-based and space-based groupby class instances from the underlying
+     * query class. Note this class only supports a single space-based group by
+     * class per query.
      */
-    public function getDatasets($data_description, $limit, $offset, $summarize)
+    protected function getGroupByClasses()
     {
         $timeGroup = null;
         $spaceGroup = null;
-        $summaryDataset = null;
 
         foreach ($this->query->getGroupBys() as $name => $groupBy) {
             if ($name === $this->query->getAggregationUnit()->getUnitName()) {
@@ -65,12 +73,32 @@ class TimeseriesDataset
             }
         }
 
+        return array($timeGroup, $spaceGroup);
+    }
+
+    /**
+     * return an array of timeseries datasets. If the summarize flag is set true and there
+     * are more data series that the $limit then $limit + 1 datasets will be returned with
+     * the last one being the summarized version of the remainder.
+     */
+    public function getDatasets($limit, $offset, $summarize)
+    {
+        $summaryDataset = null;
+
+        list($timeGroup, $spaceGroup) = $this->getGroupByClasses();
+
         $statObj = reset($this->query->getStats());
         $seriesIds = $this->getSeriesIds($limit, $offset);
 
         if (!empty($seriesIds)) {
             if ($summarize && $limit < $this->getUniqueCount()) {
-                $summaryDataset = $this->getSummarizedColumn($statObj->getAlias()->__toString(), $spaceGroup->getName(), $this->getUniqueCount() - $limit, $seriesIds, $this->query->getRealmName());
+                $summaryDataset = $this->getSummarizedColumn(
+                    $statObj->getAlias()->__toString(),
+                    $spaceGroup->getName(),
+                    $this->getUniqueCount() - $limit,
+                    $seriesIds,
+                    $this->query->getRealmName()
+                );
             }
 
             $this->query->addWhereAndJoin($spaceGroup->getName(), 'IN', $seriesIds);
@@ -92,8 +120,8 @@ class TimeseriesDataset
 
         while($row = $statement->fetch(\PDO::FETCH_ASSOC, \PDO::FETCH_ORI_NEXT)) {
 
-            $seriesId = $row[$data_description->group_by . '_id'];
-            $dimension = $row[$data_description->group_by . '_name'];
+            $seriesId = $row[$spaceGroup->getName() . '_id'];
+            $dimension = $row[$spaceGroup->getName() . '_name'];
 
             $dataSet = $dataSets[$seriesId];
             if ($dataSet === null) {
@@ -102,7 +130,7 @@ class TimeseriesDataset
                 $dataSet->setUnit($statObj->getLabel()); // <- check this is correct
                 $dataSet->setStatistic($statObj);
                 $dataSet->setGroupName($dimension);
-                $dataSet->setGroupId($row[$data_description->group_by . '_id']); // <- check this is correct
+                $dataSet->setGroupId($row[$spaceGroup->getName() . '_id']); // <- check this is correct
             }
 
             $value_col = $statObj->getAlias()->__toString();
@@ -114,9 +142,9 @@ class TimeseriesDataset
                 $columnTypes[$value_col]['precision']
             );
 
-            $error = 0;
+            $error = null;
             if (isset($this->query->_stats['sem_' . $statObj->getAlias()])) {
-                $error =  SimpleDataset::convertSQLtoPHP(
+                $error = SimpleDataset::convertSQLtoPHP(
                     $row['sem_' . $statObj->getAlias()],
                     $columnTypes['sem_' . $statObj->getAlias()]['native_type'],
                     $columnTypes['sem_' . $statObj->getAlias()]['precision']
@@ -135,29 +163,36 @@ class TimeseriesDataset
         return $retVal;
     }
 
-    protected function getSummaryOperation($stat) {
+    /**
+     * The choice of summary algorithm is determined based on the alias name
+     * for the statistic.
+     */
+    protected function getSummaryOp($column_name, $normalizeBy)
+    {
+        $series_name = "All $normalizeBy Others";
+        $sql = "SUM(t.$column_name)";
 
-        $operation = "SUM";
+        if (strpos($column_name, 'min_') !== false)
+        {
+            $series_name = "Minimum over all $normalizeBy others";
+            $sql = "MIN(t.$column_name)";
+        }
+        elseif (strpos($column_name, 'max_') !== false)
+        {
+            $series_name = "Maximum over all $normalizeBy others";
+            $sql = "MAX(t.$column_name)";
+        }
+        elseif (strpos($column_name, 'avg_') !== false
+            || strpos($column_name, 'count') !== false
+            || strpos($column_name, 'utilization') !== false
+            || strpos($column_name, 'rate') !== false
+            || strpos($column_name, 'expansion_factor') !== false)
+        {
+            $series_name = "Avg of $normalizeBy Others";
+            $sql = "SUM(t.$column_name) / $normalizeBy";
+        }
 
-        // Determine operation for summarizing the dataset
-        if ( strpos($stat, 'min_') !== false ) {
-            $operation = "MIN";
-
-        } elseif ( strpos($stat, 'max_') !== false ) {
-            $operation = "MAX";
-
-        } else {
-            $useMean
-                = strpos($stat, 'avg_') !== false
-                || strpos($stat, 'count') !== false
-                || strpos($stat, 'utilization') !== false
-                || strpos($stat, 'rate') !== false
-                || strpos($stat, 'expansion_factor') !== false;
-
-            $operation = $useMean ? "AVG" : "SUM";
-        } // if strpos
-
-        return $operation;
+        return array($sql, $series_name);
     }
 
     protected function getSummarizedColumn(
@@ -169,6 +204,8 @@ class TimeseriesDataset
     ) {
         // determine the selected time aggregation unit
         $aggunit_name = $this->query->getAggregationUnit()->getUnitName();
+
+        // TODO move query clone to timeseries class 
 
         // assign column names for returned data:
         $values_column_name    = $column_name;
@@ -197,80 +234,40 @@ class TimeseriesDataset
 
         $q->addWhereAndJoin($where_name, "NOT IN", $whereExcludeArray);
 
+        list($sql, $series_name) = $this->getSummaryOp($column_name, $normalizeBy);
 
-        // perform the summarization right in the database
-
-        // Take AVG, MIN, MAX, or SUM of the column_name, grouped by time aggregation unit
-        $statAlias =  $q->_stats[$column_name]->getAlias();
-        $operation = $this->getSummaryOperation($statAlias);
-
-        if ($operation === 'AVG') {
-            $stmt = "SUM(t.$column_name) / $normalizeBy";
-        } else {
-            $stmt = "$operation(t.$column_name)";
-        }
-        switch ($operation) {
-            case 'AVG':
-                $series_name = "Avg of $normalizeBy Others";
-                break;
-            case 'MIN':
-                $series_name = "Minimum over all $normalizeBy others";
-                break;
-            case 'MAX':
-                $series_name = "Maximum over all $normalizeBy others";
-                break;
-            default:
-                $series_name = "All $normalizeBy Others";
-        }
-
-        // set up data object for return
         $dataObject = new \DataWarehouse\Data\SimpleTimeseriesData($series_name);
         $dataObject->setStatistic($q->_stats[$column_name]);
         $dataObject->setUnit($q->_stats[$column_name]->getLabel());
+        $dataObject->setGroupId(self::SUMMARY_GROUP_ID);
+        $dataObject->setGroupName($series_name);
 
         $query_string = "SELECT t.$start_ts_column_name AS $start_ts_column_name,
-                                $stmt AS $column_name "
+                                $sql AS $column_name "
                         . " FROM ( "
                         .   $q->getQueryString()
                         . " ) t "
                         . " GROUP BY t.$start_ts_column_name";
 
-        $statement = DB::factory($q->_db_profile)->query(
-            $query_string,
-            array(),
-            true
-        );
+        $statement = DB::factory($q->_db_profile)->query($query_string, array(), true);
         $statement->execute();
 
         $columnTypes = array();
-
         for ($end = $statement->columnCount(), $i = 0; $i < $end; $i++) {
             $raw_meta = $statement->getColumnMeta($i);
             $columnTypes[$raw_meta['name']] = $raw_meta;
         }
 
-        // accumulate the values in a temp variable, then set everything
-        $dataValues = array();
-        $dataStartTs = array();
-
         while ( $row = $statement->fetch(\PDO::FETCH_ASSOC, \PDO::FETCH_ORI_NEXT)) {
-
-            $dataStartTs[]  = $row[$start_ts_column_name];
-
-            $dataValues[] = SimpleDataset::convertSQLtoPHP(
+            $start_ts  = $row[$start_ts_column_name];
+            $value = SimpleDataset::convertSQLtoPHP(
                 $row[$values_column_name],
                 $columnTypes[$values_column_name]['native_type'],
                 $columnTypes[$values_column_name]['precision']
             );
+
+            $dataObject->addDatum($start_ts, $value, null);
         }
-
-        $dataObject->setValues($dataValues );
-        $dataObject->setStartTs($dataStartTs);
-
-        // Prevent drilldown from this summarized data series
-        // @refer html/gui/js/DrillDownMenu.js
-        $dataObject->setGroupId(-99999);
-        $dataObject->setGroupName($series_name);
 
         return $dataObject;
     }
@@ -297,37 +294,16 @@ class TimeseriesDataset
         return $timestampsDataObject;
     }
 
+    /**
+     * Returns the number of data series in this dataset. The count is determined from the
+     * aggregate version of the supplied timeseries query.
+     */
     public function getUniqueCount()
     {
         if ($this->series_count === null) {
             $this->series_count = $this->agg_query->getCount();
         }
         return $this->series_count;
-    }
-
-    /**
-     */
-    private function buildDefaultDataDescription()
-    {
-        $queryGroupByName = 'none';
-        foreach ($this->query->getGroupBys() as $groupBy) {
-            $groupByName = $groupBy->getName();
-            if (
-                $groupByName !== 'day'
-                && $groupByName !== 'month'
-                && $groupByName !== 'quarter'
-                && $groupByName !== 'year'
-            ) {
-                $queryGroupByName = $groupByName;
-                break;
-            }
-        }
-
-        return (object) array(
-            'group_by' => $queryGroupByName,
-            'metric' => reset($this->query->getStats())->getAlias(),
-            'sort_type' => 'value_asc'
-        );
     }
 
     public function export($export_title = 'title')
@@ -347,12 +323,9 @@ class TimeseriesDataset
             'rows' => array()
         );
 
-        $group_bys = $this->query->getGroupBys();
-        $timeGroup = reset($group_bys);
+        list($timeGroup, $spaceGroup) = $this->getGroupByClasses();
 
         $exportData['headers'][] = $timeGroup->getLabel();
-
-        $data_description = $this->buildDefaultDataDescription();
 
         $stat = reset($this->query->getStats());
         $stat_unit  = $stat->getUnit();
@@ -377,7 +350,7 @@ class TimeseriesDataset
         $statement->execute();
         while($row = $statement->fetch(\PDO::FETCH_ASSOC, \PDO::FETCH_ORI_NEXT)) {
 
-            $dimension = $row[$data_description->group_by . '_name'];
+            $dimension = $row[$spaceGroup->getName() . '_name'];
 
             $timeTs = $row[$timeGroup->getName() . '_start_ts'];
 

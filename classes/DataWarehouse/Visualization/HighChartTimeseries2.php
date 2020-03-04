@@ -2,6 +2,7 @@
 namespace DataWarehouse\Visualization;
 
 use DataWarehouse;
+use DataWarehouse\Data\TimeseriesDataset;
 
 /*
 *
@@ -322,7 +323,7 @@ class HighChartTimeseries2 extends HighChart2
                     $this->_chart['yAxis'][] = $yAxis;
                 } // if($yAxis == null)
 
-                $dataset = new \DataWarehouse\Data\TimeseriesDataset($query);
+                $dataset = new TimeseriesDataset($query);
 
                 $xAxisData = $dataset->getTimestamps();
 
@@ -408,12 +409,9 @@ class HighChartTimeseries2 extends HighChart2
                     $semDecimals = $semStatisticObject->getDecimals();
                 }
 
-                // get the full dataset count: how many unique values in the dimension we group by?
-                $datagroupFullCount = $dataset->getUniqueCount();
+                $this->_total = max($this->_total, $dataset->getUniqueCount());
 
-                $this->_total = max($this->_total, $datagroupFullCount);
-
-                $yAxisDataObjectsArray = $dataset->getDatasets($data_description, $limit, $offset, $summarizeDataseries);
+                $yAxisDataObjectsArray = $dataset->getDatasets($limit, $offset, $summarizeDataseries);
 
                 // operate on each yAxisDataObject, a SimpleTimeseriesData object
                 // @refer HighChart2 line 866
@@ -473,7 +471,7 @@ class HighChartTimeseries2 extends HighChart2
                             ($values_count < 21 && $this->_width > \DataWarehouse\Visualization::$thumbnail_width) ||
                             $y_values_count == 1;
 
-                        $isRemainder = $yAxisDataObject->getGroupId() === -99999;
+                        $isRemainder = $yAxisDataObject->getGroupId() === TimeseriesDataset::SUMMARY_GROUP_ID;
 
                         $filterParametersTitle = $data_description->long_legend == 1?$query->getFilterParametersTitle():'';
                         if($filterParametersTitle != '')
