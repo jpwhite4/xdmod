@@ -19,7 +19,7 @@ class TimeseriesDataset
     // drilldown tooltip @refer html/gui/js/DrillDownMenu.js The visualization
     // class also checks this to set the remainder flag on the dataset for hte
     // metric explorer.
-    public const SUMMARY_GROUP_ID = -99999;
+    const SUMMARY_GROUP_ID = -99999;
 
     protected $query;
     protected $agg_query;
