@@ -339,10 +339,8 @@ class TimeseriesDataset
         }
 
         $dimensions = $this->getSeriesIds(null, null);
-        foreach ($dimensions as $dimension) {
-            $exportData['headers'][] = "[$dimension] $seriesName";
-        }
 
+        $dimensionNames = array();
         $timeData = array();
         $timestamps = array();
 
@@ -350,7 +348,11 @@ class TimeseriesDataset
         $statement->execute();
         while($row = $statement->fetch(\PDO::FETCH_ASSOC, \PDO::FETCH_ORI_NEXT)) {
 
-            $dimension = $row[$spaceGroup->getName() . '_name'];
+            $dimension = $row[$spaceGroup->getName() . '_id'];
+
+            if (!isset($dimensionNames[$dimension])) {
+                $dimensionNames[$dimension] = $row[$spaceGroup->getName() . '_name'];
+            }
 
             $timeTs = $row[$timeGroup->getName() . '_start_ts'];
 
@@ -360,6 +362,11 @@ class TimeseriesDataset
             }
 
             $timeData[$timeTs][$dimension] = $row[$stat->getAlias()->getName()];
+        }
+
+        // Build header
+        foreach ($dimensions as $dimension) {
+            $exportData['headers'][] = "[{$dimensionNames[$dimension]}] $seriesName";
         }
 
         // Data are returned in time order, but every dimension may not have all timestamps
