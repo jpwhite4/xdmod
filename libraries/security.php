@@ -6,9 +6,10 @@
 namespace xd_security;
 
 /**
- * Set the secure cookie flag for the session
+ * Wrapper for the session_start that ensures that the secure
+ * cookie flag is set for the session cookie.
  */
-function setsecurecookie()
+function start_session()
 {
     $cParams = session_get_cookie_params();
     session_set_cookie_params(
@@ -17,6 +18,7 @@ function setsecurecookie()
         $cParams['domain'],
         true
     );
+    @session_start();
 }
 
 /**

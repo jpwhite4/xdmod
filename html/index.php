@@ -29,8 +29,7 @@ if (preg_match('/index.php(\/+)/i', $url)) {
 
 require_once dirname(__FILE__) . '/../configuration/linker.php';
 
-\xd_security\setsecurecookie();
-@session_start();
+\xd_security\start_session();
 
 $userLoggedIn = isset($_SESSION['xdUser']);
 if ($userLoggedIn) {
