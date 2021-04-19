@@ -244,7 +244,10 @@ DatasetProcessor.prototype.process = function (totalCores, coreIndex) {
             self.dataset.input.config.uri,
             {
                 useNewUrlParser: true,
-                useUnifiedTopology: true
+                useUnifiedTopology: true,
+                writeConcern: {
+                    w: 0
+                }
             },
             function (err, client) {
             if (err) {
