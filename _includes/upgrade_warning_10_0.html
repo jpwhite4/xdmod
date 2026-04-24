@@ -1,0 +1,34 @@
+<div class="alertbox warning">
+<h2><img src="../assets/images/exclamation_ak.png" alt="" /> Warning</h2>
+<p>
+There are known security issues with the validation of parameters in Open XDMoD {{ page.version }}.
+See the <a href="https://github.com/ubccr/xdmod/security/advisories/">XDMoD security advisories page</a> for
+detailed information.
+We highly recommend upgrading to <a href="/{{site.latest_version}}/">Open XDMoD {{site.latest_sw_version}}</a>.
+</p>
+
+<p>
+If upgrading to the latest supported version is not an option, then your Open
+XDMoD instance should be patched as follows:
+</p>
+
+<h3>RPM installs</h3>
+<ol>
+	<li>Download two patch files:
+		<a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a>
+            and <a href="https://github.com/ubccr/xdmod/commit/52cb4f2c4c3d60.patch">52cb4f2c4c3d60.patch</a></li>
+	<li>Apply the first patch: <pre><code>patch -p1 -d /usr/share/xdmod &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Apply the second patch: <pre><code>patch -p1 -d /usr/share/xdmod &lt; 52cb4f2c4c3d60.patch</code></pre></li>
+	<li>Remove one file <pre><code>rm /usr/share/xdmod/html/controllers/sab_user/assign_assumed_person.php</code></pre></li>
+</ol>
+
+<h3>Source code installs</h3>
+<ol>
+	<li>Download two patch files:
+		<a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a>
+            and <a href="https://github.com/ubccr/xdmod/commit/52cb4f2c4c3d60.patch">52cb4f2c4c3d60.patch</a></li>
+	<li>Apply the first patch: <pre><code>patch -p1 -d /opt/xdmod/share &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Apply the second patch: <pre><code>patch -p1 -d /opt/xdmod/share &lt; 52cb4f2c4c3d60.patch</code></pre></li>
+	<li>Remove one file <pre><code>rm /opt/xdmod/share/html/controllers/sab_user/assign_assumed_person.php</code></pre></li>
+</ol>
+</div>

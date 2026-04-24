@@ -2,7 +2,7 @@
 title: Open XDMoD
 ---
 
-{% include upgrade_info.html %}
+{% include upgrade_warning_10_0.html %}
 
 Open XDMoD is an open source tool to facilitate the management of high
 performance computing resources.   It is widely deployed at academic,

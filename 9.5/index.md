@@ -2,7 +2,7 @@
 title: Open XDMoD
 ---
 
-{% include upgrade_warning.html gbpath="Realm/GroupBy.php" %}
+{% include upgrade_warning_9_5.html gbpath="Realm/GroupBy.php" %}
 
 Open XDMoD is an open source tool to facilitate the management of high
 performance computing resources.   It is widely deployed at academic,

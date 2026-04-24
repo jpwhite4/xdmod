@@ -16,8 +16,11 @@ XDMoD instance should be patched as follows:
 <ol>
 	<li>Download the updated source file <a href="https://raw.githubusercontent.com/ubccr/xdmod/xdmod{{ page.version }}/classes/{{ include.gbpath }}">GroupBy.php</a></li>
 	<li>Copy this file to: <code>/usr/share/xdmod/classes/{{ include.gbpath }}</code></li>
-	<li>Download a patch file: <a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a></li>
-	<li>Apply the patch: <pre><code>patch -p1 -d /usr/share/xdmod &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Download two patch files:
+		<a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a>
+            and <a href="https://github.com/ubccr/xdmod/commit/52cb4f2c4c3d60.patch">52cb4f2c4c3d60.patch</a></li>
+	<li>Apply the first patch: <pre><code>patch -p1 -d /usr/share/xdmod &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Apply the second patch: <pre><code>patch -p1 -d /usr/share/xdmod &lt; 52cb4f2c4c3d60.patch</code></pre></li>
 	<li>Remove one file <pre><code>rm /usr/share/xdmod/html/controllers/sab_user/assign_assumed_person.php</code></pre></li>
 </ol>
 
@@ -25,8 +28,11 @@ XDMoD instance should be patched as follows:
 <ol>
 	<li>Download the updated source file <a href="https://raw.githubusercontent.com/ubccr/xdmod/xdmod{{ page.version }}/classes/{{ include.gbpath }}">GroupBy.php</a></li>
 	<li>Copy this file to: <code>/opt/xdmod/share/classes/{{ include.gbpath }}</code> (where <code>/opt/xdmod</code> is the installation prefix)</li>
-	<li>Download a patch file: <a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a></li>
-	<li>Apply the patch: <pre><code>patch -p1 -d /opt/xdmod/share &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Download two patch files:
+		<a href="https://github.com/ubccr/xdmod/commit/1e9f8d58d5ccfc.patch">1e9f8d58d5ccfc.patch</a>
+            and <a href="https://github.com/ubccr/xdmod/commit/52cb4f2c4c3d60.patch">52cb4f2c4c3d60.patch</a></li>
+	<li>Apply the first patch: <pre><code>patch -p1 -d /opt/xdmod/share &lt; 1e9f8d58d5ccfc.patch</code></pre></li>
+	<li>Apply the second patch: <pre><code>patch -p1 -d /opt/xdmod/share &lt; 52cb4f2c4c3d60.patch</code></pre></li>
 	<li>Remove one file <pre><code>rm /opt/xdmod/share/html/controllers/sab_user/assign_assumed_person.php</code></pre></li>
 </ol>
 </div>
