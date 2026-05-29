@@ -62,8 +62,6 @@ class InternalDashboardController extends BaseController
                 \xd_utilities\getConfiguration('rest', 'version')
             ),
             'xdmod_features' => json_encode($this->getFeatures()),
-            'is_logged_in' => !$user->isPublicUser(),
-            'is_public_user' => $user->isPublicUser(),
             'asset_paths' => Assets::generateAssetTags('internal_dashboard'),
             'error_codes' => \XDError::getErrorCodes()
         ];

@@ -175,9 +175,7 @@
     <script type="text/javascript" src="{{ asset('gui/js/dashboard/Dashboard/FramePanel.js') }}"></script>
     <script type="text/javascript" src="{{ asset('gui/js/dashboard/Dashboard/Viewport.js') }}"></script>
 
-    {% if user is not null and not is_public_user %}
-        {{ asset_paths | raw }}
-    {% endif %}
+    {{ asset_paths | raw }}
 
     <script type="text/javascript">
         CCR.xdmod.features = {{ xdmod_features | raw }};
