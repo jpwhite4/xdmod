@@ -513,7 +513,7 @@ class Query extends Loggable
 
     public function addGroup(\DataWarehouse\Query\Model\Field $field)
     {
-        $this->_groups["$field"] = $field;
+        $this->_groups[$field->getAlias()->getName()] = $field;
     }
     public function getGroups()
     {
@@ -638,7 +638,7 @@ class Query extends Loggable
         $name_field = $select_fields[ sprintf('%s_name', $primaryGroupById) ];
         $short_name_field = $select_fields[ sprintf('%s_short_name', $primaryGroupById) ];
 
-        $groups_str = implode(', ', $groups);
+        $groups_str = '`' . implode('`, `', $groups) . '`';
 
         $orders = $this->getOrders();
         $num_orders = count($orders);
@@ -731,7 +731,7 @@ SQL;
     public function getQueryString($limit = null, $offset = null, $extraHavingClause = null)
     {
         $wheres = $this->getWhereConditions();
-        $groups = $this->getGroups();
+        $groups = array_keys($this->getGroups());
 
         $select_tables = $this->getSelectTables();
         $select_fields = $this->getSelectFields();
@@ -759,7 +759,7 @@ SQL;
             implode(",\n  ", $select_tables),
             ( "" == $this->getLeftJoinSql() ? "" : "\n" . $this->getLeftJoinSql() ),
             implode("\n  AND ", $wheres),
-            ( count($groups) > 0 ? "GROUP BY " . implode(",\n  ", $groups) : "" ),
+            ( count($groups) > 0 ? "GROUP BY `" . implode("`,\n  `", $groups) . '`' : "" ),
             ( null !== $extraHavingClause ? "\nHAVING $extraHavingClause" : "" ),
             ( count($select_order_by) > 0 ? "\nORDER BY " . implode(",\n  ", $select_order_by) : "" ),
             ( null !== $limit && null !== $offset ? "\nLIMIT $limit OFFSET $offset" : "" )

@@ -213,18 +213,14 @@ class TimeseriesQuery extends Query implements iQuery
         $extraHavingClause = null
     ) {
         $wheres = $this->getWhereConditions();
-        $groups = $this->getGroups();
 
         $select_tables = $this->getSelectTables();
         $select_fields = $this->getSelectFields();
 
         $select_order_by = $this->getSelectOrderBy();
 
-        $select_group_by = array();
+        $select_group_by = array_keys($this->getGroups());
 
-        foreach ($groups as $group) {
-            $select_group_by[] = $group->getQualifiedName(false);
-        }
 
         $format = <<<SQL
 SELECT
@@ -241,7 +237,7 @@ SQL;
             implode(",\n  ", $select_fields),
             implode(",\n  ", $select_tables),
             implode("\n  AND ", $wheres),
-            ( count($select_group_by) > 0 ? "GROUP BY " . implode(",\n  ", $select_group_by) : "" ),
+            ( count($select_group_by) > 0 ? "GROUP BY `" . implode("`,\n  `", $select_group_by) . '`' : "" ),
             ( null !== $extraHavingClause ? "\nHAVING $extraHavingClause" : "" ),
             ( count($select_order_by) > 0 ? "\nORDER BY " . implode(",\n  ", $select_order_by) : "" ),
             ( null !== $limit && null !== $offset ? "\nLIMIT $limit OFFSET $offset" : "" )
