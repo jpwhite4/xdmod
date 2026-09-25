@@ -513,7 +513,7 @@ class Query extends Loggable
 
     public function addGroup(\DataWarehouse\Query\Model\Field $field)
     {
-        $this->_groups[$field->getAlias()->getName()] = $field;
+        $this->_groups[$field->getFieldIdentifier()] = $field;
     }
     public function getGroups()
     {
@@ -638,7 +638,11 @@ class Query extends Loggable
         $name_field = $select_fields[ sprintf('%s_name', $primaryGroupById) ];
         $short_name_field = $select_fields[ sprintf('%s_short_name', $primaryGroupById) ];
 
-        $groups_str = '`id`, `name`, `short_name`, `_dimensionOrderValue`';
+        $selects = [sprintf('%s_id', $primaryGroupById), sprintf('%s_short_name', $primaryGroupById), sprintf('%s_name', $primaryGroupById)];
+        $groups = [];
+        foreach ($selects as $select) {
+            $groups[] = $this->getFields()[$select]->getFieldIdentifier();
+        }
 
         $orders = $this->getOrders();
         $num_orders = count($orders);
@@ -646,13 +650,18 @@ class Query extends Loggable
         $orders_field_alias_clause = ' AS _dimensionOrderValue';
         $as_clause_regex = '/\s+AS\s+\S+\s*$/i';
         if ($orders_exist) {
-            $orders_field = reset($orders)->getField()->getQualifiedName(false) . $orders_field_alias_clause;
+            $orderByField = reset($orders)->getField();
+            $orders_field = $orderByField->getQualifiedName(false) . $orders_field_alias_clause;
+            $groups[] = $orderByField->getFieldIdentifier();
         } else {
             $orders_field = preg_replace($as_clause_regex, $orders_field_alias_clause, $name_field, 1, $numAsSubsitutionsDone);
             if ($numAsSubsitutionsDone === 0) {
                 $orders_field .= $orders_field_alias_clause;
             }
+            $groups[] = '_dimensionOrderValue';
         }
+
+        $groups_str = implode(", ", $groups);
 
         // This method is only called from MetricExplorer::getDimensionValues() which constructs an
         // aggregate query with start and end dates of NULL, meaning that the duration table is
@@ -759,7 +768,7 @@ SQL;
             implode(",\n  ", $select_tables),
             ( "" == $this->getLeftJoinSql() ? "" : "\n" . $this->getLeftJoinSql() ),
             implode("\n  AND ", $wheres),
-            ( count($groups) > 0 ? "GROUP BY `" . implode("`,\n  `", $groups) . '`' : "" ),
+            ( count($groups) > 0 ? "GROUP BY " . implode(",\n  ", $groups) : "" ),
             ( null !== $extraHavingClause ? "\nHAVING $extraHavingClause" : "" ),
             ( count($select_order_by) > 0 ? "\nORDER BY " . implode(",\n  ", $select_order_by) : "" ),
             ( null !== $limit && null !== $offset ? "\nLIMIT $limit OFFSET $offset" : "" )

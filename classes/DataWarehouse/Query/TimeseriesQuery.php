@@ -237,7 +237,7 @@ SQL;
             implode(",\n  ", $select_fields),
             implode(",\n  ", $select_tables),
             implode("\n  AND ", $wheres),
-            ( count($select_group_by) > 0 ? "GROUP BY `" . implode("`,\n  `", $select_group_by) . '`' : "" ),
+            ( count($select_group_by) > 0 ? "GROUP BY " . implode(",\n  ", $select_group_by) : "" ),
             ( null !== $extraHavingClause ? "\nHAVING $extraHavingClause" : "" ),
             ( count($select_order_by) > 0 ? "\nORDER BY " . implode(",\n  ", $select_order_by) : "" ),
             ( null !== $limit && null !== $offset ? "\nLIMIT $limit OFFSET $offset" : "" )
