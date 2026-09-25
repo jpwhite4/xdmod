@@ -638,11 +638,7 @@ class Query extends Loggable
         $name_field = $select_fields[ sprintf('%s_name', $primaryGroupById) ];
         $short_name_field = $select_fields[ sprintf('%s_short_name', $primaryGroupById) ];
 
-        $selects = [sprintf('%s_id', $primaryGroupById), sprintf('%s_short_name', $primaryGroupById), sprintf('%s_name', $primaryGroupById)];
-        $groups = [];
-        foreach ($selects as $select) {
-            $groups[] = $this->getFields()[$select]->getFieldIdentifier();
-        }
+        $groups_str = implode(', ', $groups) . ", name, short_name, _dimensionOrderValue";;
 
         $orders = $this->getOrders();
         $num_orders = count($orders);
@@ -650,18 +646,13 @@ class Query extends Loggable
         $orders_field_alias_clause = ' AS _dimensionOrderValue';
         $as_clause_regex = '/\s+AS\s+\S+\s*$/i';
         if ($orders_exist) {
-            $orderByField = reset($orders)->getField();
-            $orders_field = $orderByField->getQualifiedName(false) . $orders_field_alias_clause;
-            $groups[] = $orderByField->getFieldIdentifier();
+            $orders_field = reset($orders)->getField()->getQualifiedName(false) . $orders_field_alias_clause;
         } else {
             $orders_field = preg_replace($as_clause_regex, $orders_field_alias_clause, $name_field, 1, $numAsSubsitutionsDone);
             if ($numAsSubsitutionsDone === 0) {
                 $orders_field .= $orders_field_alias_clause;
             }
-            $groups[] = '_dimensionOrderValue';
         }
-
-        $groups_str = implode(", ", $groups);
 
         // This method is only called from MetricExplorer::getDimensionValues() which constructs an
         // aggregate query with start and end dates of NULL, meaning that the duration table is
