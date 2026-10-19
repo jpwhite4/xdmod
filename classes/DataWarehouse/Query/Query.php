@@ -157,6 +157,10 @@ class Query extends Loggable
 
         parent::__construct($logger);
 
+        if ($realmId == 'Allocations') {
+            $this->_db_profile = "colstore";
+        }
+
         $this->variableStore = new VariableStore();
         $this->pdoparams = array();
         $this->pdoindex = 0;
