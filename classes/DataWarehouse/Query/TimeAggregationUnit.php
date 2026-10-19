@@ -2,6 +2,7 @@
 namespace DataWarehouse\Query;
 
 use Configuration\XdmodConfiguration;
+use CCR\DB;
 
 /**
  * @author Amin Ghadersohi
@@ -81,7 +82,14 @@ abstract class TimeAggregationUnit
             u.' . $unit . '_start <= ? AND
             u.' . $unit . '_end > ?';
 
-        $dateResult = \DataWarehouse::connect()->query($query, array($end, $start));
+        $dbconfig = 'datawarehouse';
+
+        if($this->getAggTablePrefix() == 'modw_coltest.allocationfact_by_') {
+            $dbconfig = 'colstore';
+        }
+        $db = DB::factory($dbconfig);
+
+        $dateResult = $db->query($query, array($end, $start));
         return array_values($dateResult[0]);
     }
 
