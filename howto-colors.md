@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/howto-colors.html
+redirect_to: /11.5/howto-colors.html
 ---

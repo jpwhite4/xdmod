@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/howto.html
+redirect_to: /11.5/howto.html
 ---

@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/howto-node-utilization.html
+redirect_to: /11.5/howto-node-utilization.html
 ---

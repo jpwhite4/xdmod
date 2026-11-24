@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/architecture.html
+redirect_to: /11.5/architecture.html
 ---

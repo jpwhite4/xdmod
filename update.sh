@@ -3,8 +3,8 @@
 
 set -e
 
-branches="xdmod11.0 xdmod10.5 xdmod10.0 xdmod9.5 xdmod9.0 xdmod8.5 xdmod8.1 xdmod8.0 xdmod7.5 xdmod7.0 xdmod6.6"
-latest="xdmod11.0"
+branches="main xdmod11.0 xdmod10.5 xdmod10.0 xdmod9.5 xdmod9.0 xdmod8.5 xdmod8.1 xdmod8.0 xdmod7.5 xdmod7.0 xdmod6.6"
+latest="main"
 
 SED=sed
 if command -v gsed > /dev/null;
@@ -14,7 +14,11 @@ fi
 
 for branch in $branches;
 do
-    version=${branch:5}
+    if [ $branch = 'main' ]; then
+        version=11.5
+    else
+        version=${branch:5}
+    fi
     if ! filelist=$(git ls-tree --name-only -r upstream/$branch docs | egrep '.*\.md$'); then
         status=$?
         if [[ $status -gt 1 ]]; then

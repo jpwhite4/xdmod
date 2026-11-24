@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/resource-specifications.html
+redirect_to: /11.5/resource-specifications.html
 ---

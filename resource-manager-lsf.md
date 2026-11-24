@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/resource-manager-lsf.html
+redirect_to: /11.5/resource-manager-lsf.html
 ---

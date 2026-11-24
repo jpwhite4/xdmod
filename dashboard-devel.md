@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/dashboard-devel.html
+redirect_to: /11.5/dashboard-devel.html
 ---

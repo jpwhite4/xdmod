@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/troubleshooting.html
+redirect_to: /11.5/troubleshooting.html
 ---

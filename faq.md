@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/faq.html
+redirect_to: /11.5/faq.html
 ---

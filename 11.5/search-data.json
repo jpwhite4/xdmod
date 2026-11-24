@@ -1,0 +1,15 @@
+---
+layout: null
+---
+
+[
+  {% for other in site.pages %}
+  {% if other.dir == page.dir %}
+    {
+      "title"    : "{{ other.title }}",
+      "relUrl"   : "{{ other.url }}",
+      "content" : "{{ other.content | strip_html | strip_newlines | escape }}"
+    } {% unless forloop.last %},{% endunless %}
+ {% endif %}
+  {% endfor %}
+]

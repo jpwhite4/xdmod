@@ -1,3 +1,3 @@
 ---
-redirect_to: /11.0/notices.html
+redirect_to: /11.5/notices.html
 ---
